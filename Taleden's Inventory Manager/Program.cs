@@ -364,7 +364,10 @@ PhysicalGunObject/
 
         double ExecutionLoad
         {
-            get { return Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount; }
+            get {
+                double instructions = Runtime.CurrentInstructionCount;
+                return instructions / Runtime.MaxInstructionCount;
+            }
         }
         #endregion
 
