@@ -201,10 +201,10 @@ PhysicalGunObject/
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         #region Fields
 
-        #region Version
+        #region mdk macros
 
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 7;
-        const string VERSION_UPDATE = "2019-04-07";
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 8, VERSION_REVISION = 0;
+        const string VERSION_UPDATE = "$MDK_DATE$";
         readonly string VERSION_NICE_TEXT = string.Format("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
 
         #endregion
