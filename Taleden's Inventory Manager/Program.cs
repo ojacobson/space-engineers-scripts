@@ -465,7 +465,11 @@ PhysicalGunObject/
         /// A wrapper for the <see cref="Echo"/> function that adds the log to the stored log.
         /// This allows the log to be remembered and re-outputted without extra work.
         /// </summary>
-        public Action<string> EchoR;
+        void EchoR(string log)
+        {
+            echoOutput.AppendLine(log);
+            Echo(log);
+        }
 
         #endregion
 
@@ -493,13 +497,6 @@ PhysicalGunObject/
 
         public Program()
         {
-            // init echo wrapper
-            EchoR = log =>
-            {
-                echoOutput.AppendLine(log);
-                Echo(log);
-            };
-
             // initialise the process steps we will need to do
             processSteps = new Action[]
             {
