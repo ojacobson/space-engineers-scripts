@@ -196,36 +196,21 @@ PhysicalGunObject/
         MOB + "Parachute:Ingot,Ore,OxygenContainerObject,PhysicalGunObject,AmmoMagazine,GasContainerObject,Component/Construction,Component/MetalGrid,Component/InteriorPlate,Component/SteelPlate,Component/Girder,Component/SmallTube,Component/LargeTube,Component/Motor,Component/Display,Component/BulletproofGlass,Component/Superconductor,Component/Computer,Component/Reactor,Component/Thrust,Component/GravityGenerator,Component/Medical,Component/RadioCommunication,Component/Detector,Component/Explosives,Component/Scrap,Component/SolarCell,Component/PowerCell"
         ;
         #endregion
-        // =================================================
-        //                 SCRIPT INTERNALS
-        //
-        //            Do not edit anything below
-        // =================================================
+
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
-        /*m*/
         #region Fields
 
         #region Version
 
-        // current script version
         const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 7;
-        /// <summary>
-        /// Current script update time.
-        /// </summary>
         const string VERSION_UPDATE = "2019-04-07";
-        /// <summary>
-        /// A formatted string of the script version.
-        /// </summary>
         readonly string VERSION_NICE_TEXT = string.Format("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
 
         #endregion
 
         #region Format Strings
 
-        /// <summary>
-        /// The format for the text to echo at the start of each call.
-        /// </summary>
         const string FORMAT_TIM_UPDATE_TEXT = "Taleden's Inventory Manager\n{0}\nLast run: #{{0}} at {{1}}";
         /// <summary>
         /// The format string for building the tag parser.
@@ -261,65 +246,26 @@ PhysicalGunObject/
 
         #region Actual
 
-        /// <summary>
-        /// Whether to rewrite TIM tags.
-        /// </summary>
         bool argRewriteTags;
-
         bool argQuotaStable;
-        /// <summary>
-        /// The opening char for TIM tags.
-        /// </summary>
         char argTagOpen;
-        /// <summary>
-        /// The closing cahr for TIM tags.
-        /// </summary>
         char argTagClose;
-        /// <summary>
-        /// The prefix string for TIM tags.
-        /// </summary>
         string argTagPrefix;
-        /// <summary>
-        /// Whether to scan collectors.
-        /// </summary>
         bool argScanCollectors;
-        /// <summary>
-        /// Whether to scan drills.
-        /// </summary>
         bool argScanDrills;
-        /// <summary>
-        /// Whether to scan grinders.
-        /// </summary>
         bool argScanGrinders;
-        /// <summary>
-        /// Whether to scan welders.
-        /// </summary>
         bool argScanWelders;
-        /// <summary>
-        /// Stores the complete arguments that were last processed to
-        /// allow checking if they have changed. This causes the arguments
-        /// to only be processed if the user has edited them.
-        /// </summary>
         string completeArguments;
 
         #endregion
 
         #region Handling
 
-        /// <summary>
-        /// The regex used to parse each line of the arguments.
-        /// </summary>
         const string ARGUMENT_PARSE_REGEX = @"^([^=\n]*)(?:=([^=\n]*))?$";
-        /// <summary>
-        /// The regex used to parse each line of the arguments.
-        /// </summary>
         readonly System.Text.RegularExpressions.Regex argParseRegex = new System.Text.RegularExpressions.Regex(
             ARGUMENT_PARSE_REGEX,
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Multiline |
             System.Text.RegularExpressions.RegexOptions.Compiled);
-        /// <summary>
-        /// The valid debug argument values.
-        /// </summary>
         readonly string[] argValidDebugValues = { "quotas", "sorting", "refineries", "assemblers" };
 
         #endregion
@@ -331,21 +277,6 @@ PhysicalGunObject/
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
         static readonly char[] SPACE = { ' ', '\t', '\u00AD' }, COLON = { ':' }, NEWLINE = { '\r', '\n' }, SPACECOMMA = { ' ', '\t', '\u00AD', ',' };
-        /// <summary>
-        /// The <c>string.Format</c> delegate.
-        /// Used for the shortand version.
-        /// </summary>
-        /// <param name="format">A composite format string.</param>
-        /// <param name="args">An object array that contains zero or more objects to format.</param>
-        /// <returns>
-        /// A copy of format in which the format items have been replaced by the string representation
-        /// of the corresponding objects in args.
-        /// </returns>
-        // the delegate will go here after minifier is fixed
-        /// <summary>
-        /// A shorthand for the <c>string.Format</c> function.
-        /// </summary>
-        // the format function will go here
 
         #endregion
 
@@ -370,13 +301,7 @@ PhysicalGunObject/
 
         #region Script state & storage
 
-        /// <summary>
-        /// The header for the statistics panels.
-        /// </summary>
         string panelStatsHeader = "";
-        /// <summary>
-        /// The logs for each cycle.
-        /// </summary>
         string[] statsLog = new string[12];
         /// <summary>
         /// The time we started the last cycle at.
@@ -389,52 +314,17 @@ PhysicalGunObject/
         /// Only used if <see cref="USE_REAL_TIME"/> is <c>true</c>.
         /// </summary>
         TimeSpan cycleUpdateWaitTime = new TimeSpan(0, 0, 0, 0, UPDATE_REAL_TIME);
-        /// <summary>
-        /// The total number of calls this script has had since compilation.
-        /// </summary>
         long totalCallCount;
-        /// <summary>
-        /// The number of items transfers this call.
-        /// </summary>
         int numberTransfers;
-        /// <summary>
-        /// The number of refineries being managed this call.
-        /// </summary>
         int numberRefineres;
-        /// <summary>
-        /// The number of assemblers being managed this call.
-        /// </summary>
         int numberAssemblers;
-        /// <summary>
-        /// The current step in the TIM process cycle.
-        /// </summary>
         int processStep;
-        /// <summary>
-        /// All of the process steps that TIM will need to take,
-        /// </summary>
         readonly Action[] processSteps;
-        /// <summary>
-        /// Regex for testing for whether a block has a TIM tag.
-        /// </summary>
         System.Text.RegularExpressions.Regex tagRegex;
-        /// <summary>
-        /// Whether a new item (e.g. from a mod) has been found.
-        /// Used to 
-        /// </summary>
         static bool foundNewItem;
-        /// <summary>
-        /// The text to echo at the start of each call.
-        /// </summary>
         string timUpdateText;
-        /// <summary>
-        /// Stores the output of Echo so we can effectively ignore some calls
-        /// without overwriting it.
-        /// </summary>
         StringBuilder echoOutput = new StringBuilder();
 
-        /// <summary>
-        /// The set of all docked grid (including the current one).
-        /// </summary>
         HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
         Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>> priTypeSubInvenRequest = new Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>>();
         Dictionary<IMyTextPanel, int> qpanelPriority = new Dictionary<IMyTextPanel, int>();
@@ -459,34 +349,19 @@ PhysicalGunObject/
 
         #endregion
 
-        #region Helper Methods
-
-        /// <summary>
-        /// A wrapper for the <see cref="Echo"/> function that adds the log to the stored log.
-        /// This allows the log to be remembered and re-outputted without extra work.
-        /// </summary>
         void EchoR(string log)
         {
             echoOutput.AppendLine(log);
             Echo(log);
         }
 
-        #endregion
-
         #region Properties
 
-        /// <summary>
-        /// The length of time we have been executing for.
-        /// Measured in milliseconds.
-        /// </summary>
         int ExecutionTime
         {
             get { return (int)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5); }
         }
 
-        /// <summary>
-        /// The current percent load of the call.
-        /// </summary>
         double ExecutionLoad
         {
             get { return Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount; }
@@ -669,7 +544,6 @@ PhysicalGunObject/
                 }
             }
         }
-
 
         void InitBlockRestrictions(string data)
         {
