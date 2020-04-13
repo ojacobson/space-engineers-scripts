@@ -528,18 +528,18 @@ PhysicalGunObject/
 
         void InitItems(string data)
         {
-            string categoryTypeId = "";
+            string itemTypeId = "";
             foreach (string line in data.Split(NEWLINE, REE))
             {
                 string[] words = (line.Trim() + ",,,,").Split(SPACECOMMA, 6);
                 words[0] = words[0].Trim();
                 if (words[0].EndsWith("/"))
                 {
-                    categoryTypeId = words[0].Substring(0, words[0].Length - 1);
+                    itemTypeId = words[0].Substring(0, words[0].Length - 1);
                 }
-                else if (categoryTypeId != "" & words[0].StartsWith("/"))
+                else if (itemTypeId != "" & words[0].StartsWith("/"))
                 {
-                    string itemSubType = words[0].Substring(1);
+                    string itemSubTypeId = words[0].Substring(1);
 
                     long absoluteQuota;
                     long.TryParse(words[1], out absoluteQuota);
@@ -550,9 +550,9 @@ PhysicalGunObject/
 
                     string label = words[3].Trim();
 
-                    string blueprint = categoryTypeId == "Ingot" | categoryTypeId == "Ore" ? null : words[4].Trim();
+                    string blueprint = itemTypeId == "Ingot" | itemTypeId == "Ore" ? null : words[4].Trim();
 
-                    InventoryItemData.InitItem(categoryTypeId, itemSubType, absoluteQuota, ratioQuota, label, blueprint);
+                    InventoryItemData.InitItem(itemTypeId, itemSubTypeId, absoluteQuota, ratioQuota, label, blueprint);
                 }
             }
         }
@@ -563,10 +563,18 @@ PhysicalGunObject/
             {
                 string[] blockitems = (line + ":").Split(':');
                 string[] block = (blockitems[0] + "/*").Split('/');
+
+                string blockTypeId = block[0].Trim(SPACE);
+                string blockSubTypeId = block[1].Trim(SPACE);
+
                 foreach (string item in blockitems[1].Split(','))
                 {
                     string[] typesub = item.ToUpper().Split('/');
-                    AddBlockRestriction(block[0].Trim(SPACE), block[1].Trim(SPACE), typesub[0], typesub.Length > 1 ? typesub[1] : null, true);
+
+                    string itemTypeId = typesub[0];
+                    string itemSubTypeId = typesub.Length > 1 ? typesub[1] : null;
+
+                    AddBlockRestriction(blockTypeId, blockSubTypeId, itemTypeId, itemSubTypeId, true);
                 }
             }
         }
