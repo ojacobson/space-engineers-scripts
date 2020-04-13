@@ -5,7 +5,13 @@ VisualStudioVersion = 15.0.28307.1022
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Drill Manager", "Drill Manager\Drill Manager.csproj", "{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common Predicates", "Common Predicates\Common Predicates.shproj", "{61EBA249-19F3-48B6-A25B-A4CEE90168BA}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Common Predicates\Common_Predicates.projitems*{61eba249-19f3-48b6-a25b-a4cee90168ba}*SharedItemsImports = 13
+		Common Predicates\Common_Predicates.projitems*{6f9177b3-55f6-4a65-bc8f-ef410eb0ef42}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 	EndGlobalSection
