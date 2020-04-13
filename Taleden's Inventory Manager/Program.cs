@@ -325,7 +325,6 @@ PhysicalGunObject/
         string timUpdateText;
         StringBuilder echoOutput = new StringBuilder();
 
-        HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
         Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>> priTypeSubInvenRequest = new Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>>();
         Dictionary<IMyTextPanel, int> qpanelPriority = new Dictionary<IMyTextPanel, int>();
         Dictionary<IMyTextPanel, List<string>> qpanelTypes = new Dictionary<IMyTextPanel, List<string>>();
@@ -749,7 +748,7 @@ PhysicalGunObject/
         {
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, blk => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
+            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, blk => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & DockedTo(blk)));
 
             // check to see if this block is the first available TIM
             int selfIndex = blocks.IndexOf(Me); // current index in search
@@ -1059,141 +1058,6 @@ PhysicalGunObject/
 
         #region Scanning
 
-        #region Grid Scanning
-
-        void ScanGrids()
-        {
-            List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-            IMyCubeGrid g1, g2;
-            Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> gridLinks = new Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>>();
-            Dictionary<IMyCubeGrid, int> gridShip = new Dictionary<IMyCubeGrid, int>();
-            List<HashSet<IMyCubeGrid>> shipGrids = new List<HashSet<IMyCubeGrid>>();
-            List<string> shipName = new List<string>();
-            HashSet<IMyCubeGrid> grids;
-            List<IMyCubeGrid> gqueue = new List<IMyCubeGrid>(); // actual Queue lacks AddRange
-            int q, s1, s2;
-            IMyShipConnector conn2;
-            HashSet<string> tags1 = new HashSet<string>();
-            HashSet<string> tags2 = new HashSet<string>();
-            System.Text.RegularExpressions.Match match;
-            Dictionary<int, Dictionary<int, List<string>>> shipShipDocks = new Dictionary<int, Dictionary<int, List<string>>>();
-            Dictionary<int, List<string>> shipDocks;
-            List<string> docks;
-            HashSet<int> ships = new HashSet<int>();
-            Queue<int> squeue = new Queue<int>();
-
-            // find mechanical links
-            GridTerminalSystem.GetBlocksOfType<IMyMechanicalConnectionBlock>(blocks);
-            foreach (IMyTerminalBlock block in blocks)
-            {
-                g1 = block.CubeGrid;
-                g2 = (block as IMyMechanicalConnectionBlock).TopGrid;
-                if (g2 == null)
-                    continue;
-                (gridLinks.TryGetValue(g1, out grids) ? grids : gridLinks[g1] = new HashSet<IMyCubeGrid>()).Add(g2);
-                (gridLinks.TryGetValue(g2, out grids) ? grids : gridLinks[g2] = new HashSet<IMyCubeGrid>()).Add(g1);
-            }
-
-            // each connected component of mechanical links is a "ship"
-            foreach (IMyCubeGrid grid in gridLinks.Keys)
-            {
-                if (!gridShip.ContainsKey(grid))
-                {
-                    s1 = (grid.Max - grid.Min + Vector3I.One).Size;
-                    g1 = grid;
-                    gridShip[grid] = shipGrids.Count;
-                    grids = new HashSet<IMyCubeGrid> { grid };
-                    gqueue.Clear();
-                    gqueue.AddRange(gridLinks[grid]);
-                    for (q = 0; q < gqueue.Count; q++)
-                    {
-                        g2 = gqueue[q];
-                        if (!grids.Add(g2))
-                            continue;
-                        s2 = (g2.Max - g2.Min + Vector3I.One).Size;
-                        g1 = s2 > s1 ? g2 : g1;
-                        s1 = s2 > s1 ? s2 : s1;
-                        gridShip[g2] = shipGrids.Count;
-                        gqueue.AddRange(gridLinks[g2].Except(grids));
-                    }
-                    shipGrids.Add(grids);
-                    shipName.Add(g1.CustomName);
-                }
-            }
-
-            // connectors require at least one shared dock tag, or no tags on either
-            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(blocks);
-            foreach (IMyTerminalBlock block in blocks)
-            {
-                conn2 = (block as IMyShipConnector).OtherConnector;
-                if (conn2 != null && block.EntityId < conn2.EntityId & (block as IMyShipConnector).Status == MyShipConnectorStatus.Connected)
-                {
-                    tags1.Clear();
-                    tags2.Clear();
-                    if ((match = tagRegex.Match(block.CustomName)).Success)
-                    {
-                        foreach (string attr in match.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE))
-                        {
-                            if (attr.StartsWith("DOCK:", OIC))
-                                tags1.UnionWith(attr.Substring(5).ToUpper().Split(COLON, REE));
-                        }
-                    }
-                    if ((match = tagRegex.Match(conn2.CustomName)).Success)
-                    {
-                        foreach (string attr in match.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE))
-                        {
-                            if (attr.StartsWith("DOCK:", OIC))
-                                tags2.UnionWith(attr.Substring(5).ToUpper().Split(COLON, REE));
-                        }
-                    }
-                    if ((tags1.Count > 0 | tags2.Count > 0) & !tags1.Overlaps(tags2))
-                        continue;
-                    g1 = block.CubeGrid;
-                    g2 = conn2.CubeGrid;
-                    if (!gridShip.TryGetValue(g1, out s1))
-                    {
-                        gridShip[g1] = s1 = shipGrids.Count;
-                        shipGrids.Add(new HashSet<IMyCubeGrid> { g1 });
-                        shipName.Add(g1.CustomName);
-                    }
-                    if (!gridShip.TryGetValue(g2, out s2))
-                    {
-                        gridShip[g2] = s2 = shipGrids.Count;
-                        shipGrids.Add(new HashSet<IMyCubeGrid> { g2 });
-                        shipName.Add(g2.CustomName);
-                    }
-                    ((shipShipDocks.TryGetValue(s1, out shipDocks) ? shipDocks : shipShipDocks[s1] = new Dictionary<int, List<string>>()).TryGetValue(s2, out docks) ? docks : shipShipDocks[s1][s2] = new List<string>()).Add(block.CustomName);
-                    ((shipShipDocks.TryGetValue(s2, out shipDocks) ? shipDocks : shipShipDocks[s2] = new Dictionary<int, List<string>>()).TryGetValue(s1, out docks) ? docks : shipShipDocks[s2][s1] = new List<string>()).Add(conn2.CustomName);
-                }
-            }
-
-            // starting "here", traverse all docked ships
-            dockedgrids.Clear();
-            dockedgrids.Add(Me.CubeGrid);
-            if (!gridShip.TryGetValue(Me.CubeGrid, out s1))
-                return;
-            ships.Add(s1);
-            dockedgrids.UnionWith(shipGrids[s1]);
-            squeue.Enqueue(s1);
-            while (squeue.Count > 0)
-            {
-                s1 = squeue.Dequeue();
-                if (!shipShipDocks.TryGetValue(s1, out shipDocks))
-                    continue;
-                foreach (int ship2 in shipDocks.Keys)
-                {
-                    if (ships.Add(ship2))
-                    {
-                        dockedgrids.UnionWith(shipGrids[ship2]);
-                        squeue.Enqueue(ship2);
-                        debugText.Add(shipName[ship2] + " docked to " + shipName[s1] + " at " + String.Join(", ", shipDocks[ship2]));
-                    }
-                }
-            }
-        }
-
-        #endregion
-
         #region Inventory Scanning
 
         void ScanGroups()
@@ -1228,7 +1092,7 @@ PhysicalGunObject/
             GridTerminalSystem.GetBlocksOfType<T>(blocks);
             foreach (IMyTerminalBlock block in blocks)
             {
-                if (!dockedgrids.Contains(block.CubeGrid))
+                if (!DockedTo(block))
                     continue;
                 match = tagRegex.Match(block.CustomName);
                 if (match.Success)
@@ -2392,8 +2256,8 @@ PhysicalGunObject/
 
             producerWork.Clear();
 
-            GridTerminalSystem.GetBlocksOfType<IMyGasGenerator>(blocks1, blk => dockedgrids.Contains(blk.CubeGrid));
-            GridTerminalSystem.GetBlocksOfType<IMyRefinery>(blocks2, blk => dockedgrids.Contains(blk.CubeGrid));
+            GridTerminalSystem.GetBlocksOfType<IMyGasGenerator>(blocks1, DockedTo);
+            GridTerminalSystem.GetBlocksOfType<IMyRefinery>(blocks2, DockedTo);
             foreach (IMyFunctionalBlock blk in blocks1.Concat(blocks2))
             {
                 stacks.Clear();
@@ -2411,7 +2275,7 @@ PhysicalGunObject/
                 }
             }
 
-            GridTerminalSystem.GetBlocksOfType<IMyAssembler>(blocks1, blk => dockedgrids.Contains(blk.CubeGrid));
+            GridTerminalSystem.GetBlocksOfType<IMyAssembler>(blocks1, DockedTo);
             foreach (IMyAssembler blk in blocks1)
             {
                 if (blk.Enabled & !blk.IsQueueEmpty & blk.Mode == MyAssemblerMode.Assembly)
