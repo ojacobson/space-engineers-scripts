@@ -66,6 +66,21 @@ AmmoMagazine/
 /NATO_25x184mm,,,,NATO_25x184mmMagazine
 /NATO_5p56x45mm,,,,NATO_5p56x45mmMagazine
 
+ConsumableItem/
+/Powerkit
+/Medkit
+/CosmicCoffee
+/ClangCola
+
+Datapad/
+/Datapad
+
+Package/
+/Package
+
+PhysicalObect/
+/SpaceCredit
+
 Component/
 /BulletproofGlass,50,2%
 /Computer,30,5%,,ComputerComponent
