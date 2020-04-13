@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace IngameScript
 {
+    delegate string DebugCallback();
     class DebugOutput
     {
         HashSet<string> DebugEnabled = new HashSet<string>();
@@ -25,6 +26,15 @@ namespace IngameScript
         {
             if (Allow(debugFlag))
             {
+                DebugMessages.Add(message);
+            }
+        }
+
+        public void Log(string debugFlag, DebugCallback callback)
+        {
+            if (Allow(debugFlag))
+            {
+                var message = callback();
                 DebugMessages.Add(message);
             }
         }
@@ -67,6 +77,11 @@ namespace IngameScript
         public void Log(string message)
         {
             DebugOutput.Log(Category, message);
+        }
+
+        public void Log(DebugCallback callback)
+        {
+            DebugOutput.Log(Category, callback);
         }
     }
 }

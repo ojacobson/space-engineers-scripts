@@ -1514,11 +1514,11 @@ PhysicalGunObject/
                         isub = scalesubs[(scalesubs.Count - 1) / 2];
                         data = typeSubData[qtype][isub];
                         total = (long)(data.amount / data.ratio + 0.5f);
-                        debug.Log($"median {typeLabel[qtype]} is {subLabel[isub]}, {total / 1e6} -> {data.amount / 1e6 / data.ratio}");
+                        debug.Log(() => $"median {typeLabel[qtype]} is {subLabel[isub]}, {total / 1e6} -> {data.amount / 1e6 / data.ratio}");
                         foreach (string qsub in scalesubs)
                         {
                             data = typeSubData[qtype][qsub];
-                            debug.Log($"  {subLabel[qsub]} @ {data.amount / 1e6} / {data.ratio} => {(long)(data.amount / 1e6 / data.ratio + 0.5f)}");
+                            debug.Log(() => $"  {subLabel[qsub]} @ {data.amount / 1e6} / {data.ratio} => {(long)(data.amount / 1e6 / data.ratio + 0.5f)}");
                         }
                     }
                 }
@@ -2177,7 +2177,7 @@ PhysicalGunObject/
             List<IMyInventory> invens = null;
             Dictionary<IMyInventory, long> invenRequest;
 
-            debug.Log($"sorting {typeLabel[itype]}/{subLabel[isub]} lim={limited} p={priority}");
+            debug.Log(() => $"sorting {typeLabel[itype]}/{subLabel[isub]} lim={limited} p={priority}");
 
             round = 1L;
             if (!FRACTIONAL_TYPES.Contains(itype))
@@ -2202,12 +2202,12 @@ PhysicalGunObject/
                     totalrequest += request;
                 }
             }
-            debug.Log($"total req={totalrequest / 1e6}");
+            debug.Log(() => $"total req={totalrequest / 1e6}");
             if (totalrequest <= 0L)
                 return;
             totalavail = data.avail + data.locked;
-            debug.Log($"total req={totalrequest / 1e6}");
-            debug.Log($"total avail={totalavail / 1e6}");
+            debug.Log(() => $"total req={totalrequest / 1e6}");
+            debug.Log(() => $"total avail={totalavail / 1e6}");
 
             // disqualify any locked invens which already have their share
             if (totalavail > 0L)
@@ -2231,7 +2231,7 @@ PhysicalGunObject/
 
                             if (avail >= amount)
                             {
-                                debug.Log($"locked {(amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName)} gets {amount / 1e6}, has {avail / 1e6}");
+                                debug.Log(() => $"locked {(amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName)} gets {amount / 1e6}, has {avail / 1e6}");
                                 dropped++;
                                 totalrequest -= request;
                                 invenRequest[amtInven] = 0L;
@@ -2258,7 +2258,7 @@ PhysicalGunObject/
                 if (limited)
                     amount = Math.Min(amount, request);
                 amount = amount / round * round;
-                debug.Log((reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + request / 1e6 + " / " + totalrequest / 1e6 + " of " + totalavail / 1e6 + " = " + amount / 1e6);
+                debug.Log(() => (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + request / 1e6 + " / " + totalrequest / 1e6 + " of " + totalavail / 1e6 + " = " + amount / 1e6);
                 totalrequest -= request;
 
                 // check how much it already has
@@ -2302,7 +2302,7 @@ PhysicalGunObject/
                 }
             }
 
-            debug.Log($"{totalavail / 1e6} left over");
+            debug.Log(() => $"{totalavail / 1e6} left over");
         }
 
 
@@ -2353,7 +2353,7 @@ PhysicalGunObject/
                         else
                         {
                             numberTransfers++;
-                            debug.Log(
+                            debug.Log(() =>
                                 "Transferred " + GetShorthand((long)((double)moved * 1e6)) + " " + typeLabel[itype] + "/" + subLabel[isub] +
                                 " from " + (fromInven.Owner == null ? "???" : (fromInven.Owner as IMyTerminalBlock).CustomName) + " to " + (toInven.Owner == null ? "???" : (toInven.Owner as IMyTerminalBlock).CustomName)
                             );
@@ -2453,7 +2453,7 @@ PhysicalGunObject/
                         level = (int)(100L * data.amount / data.quota);
                         ores.Add(isubOre);
                         oreLevel[isubOre] = level;
-                        debug.Log("  " + subLabel[isubIngot] + " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + "," + (isubOre == isubIngot ? "" : " Ore/" + subLabel[isubOre]) + " L=" + level + "%");
+                        debug.Log(() => "  " + subLabel[isubIngot] + " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + "," + (isubOre == isubIngot ? "" : " Ore/" + subLabel[isubOre]) + " L=" + level + "%");
                     }
                 }
             }
@@ -2489,7 +2489,7 @@ PhysicalGunObject/
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, 0.2), 10000.0);
                     data.prdSpeed["" + rfn.BlockDefinition] = speed;
                     if ((int)(oldspeed + 0.5) != (int)(speed + 0.5))
-                        debug.Log("  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + (int)(oldspeed + 0.5) + " -> " + (int)(speed + 0.5) + "kg/cycle");
+                        debug.Log(() => "  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + (int)(oldspeed + 0.5) + " -> " + (int)(speed + 0.5) + "kg/cycle");
                 }
                 if (refineryOres[rfn].Count > 0) refineryOres[rfn].IntersectWith(oreLevel.Keys); else refineryOres[rfn].UnionWith(oreLevel.Keys);
                 ready = refineryOres[rfn].Count > 0;
@@ -2501,7 +2501,7 @@ PhysicalGunObject/
                 }
                 if (ready)
                     refineries.Add(rfn);
-                debug.Log(
+                debug.Log(() =>
                     "  " + rfn.CustomName + (stacks.Count < 1 ? " idle" : " refining " + (int)stacks[0].Amount + "kg " + (isub == "" ? "unknown" : subLabel[isub] + (!oreLevel.ContainsKey(isub) ? "" : " (L=" + oreLevel[isub] + "%)")) + (stacks.Count < 2 ? "" : ", then " + (int)stacks[1].Amount + "kg " + (isub2 == "" ? "unknown" : subLabel[isub2] + (!oreLevel.ContainsKey(isub2) ? "" : " (L=" + oreLevel[isub2] + "%)")))) + "; " + (oreLevel.Count == 0 ? "nothing to do" : ready ? "ready" : refineryOres[rfn].Count == 0 ? "restricted" : "busy")
                 );
             }
@@ -2537,10 +2537,10 @@ PhysicalGunObject/
                         speed = typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0;
                         AddInvenRequest(rfn, 0, "ORE", isub, priority, (long)(10 * speed * 1e6 + 0.5));
                         oreLevel[isub] += Math.Min(Math.Max((int)(oreLevel[isub] * 0.41), 1), 100 / refineryOres.Count);
-                        debug.Log("  " + rfn.CustomName + " assigned " + (int)(10 * speed + 0.5) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
+                        debug.Log(() => "  " + rfn.CustomName + " assigned " + (int)(10 * speed + 0.5) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
                     }
                     else
-                        debug.Log("  " + rfn.CustomName + " unassigned, nothing to do");
+                        debug.Log(() => "  " + rfn.CustomName + " unassigned, nothing to do");
                 }
             }
 
@@ -2577,7 +2577,7 @@ PhysicalGunObject/
             // scan inventory levels
             typeAmount.TryGetValue("COMPONENT", out ttlCmp);
             amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f) ? d.amount / Math.Max(d.minimum, 17.5 * d.ratio * ttlCmp) : 2.0));
-            debug.Log("  Component par L=" + amount + "%");
+            debug.Log(() => "  Component par L=" + amount + "%");
             foreach (string itype in types)
             {
                 if (itype != "ORE" & itype != "INGOT")
@@ -2592,7 +2592,7 @@ PhysicalGunObject/
                         if (data.quota > 0L & level < itemPar[item] & data.blueprint != default(MyDefinitionId))
                         {
                             if (data.hold == 0) itemLevel[item] = level;
-                            debug.Log("  " + typeLabel[itype] + "/" + subLabel[isub] + (data.hold > 0 ? "" : " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + ", L=" + level + "%") + (data.hold > 0 | data.jam > 0 ? "; HOLD " + data.hold + "/" + 10 * data.jam : ""));
+                            debug.Log(() => "  " + typeLabel[itype] + "/" + subLabel[isub] + (data.hold > 0 ? "" : " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + ", L=" + level + "%") + (data.hold > 0 | data.jam > 0 ? "; HOLD " + data.hold + "/" + 10 * data.jam : ""));
                         }
                     }
                 }
@@ -2632,7 +2632,7 @@ PhysicalGunObject/
                         speed = Math.Max(oldspeed, work.quantity - (double)queue[0].Amount + asm.CurrentProgress);
                         if ((producerJam[asm] = (producerJam.TryGetValue(asm, out level) ? level : 0) + 1) >= 3)
                         {
-                            debug.Log("  " + asm.CustomName + " is jammed by " + subLabel[item.subType]);
+                            debug.Log(() => "  " + asm.CustomName + " is jammed by " + subLabel[item.subType]);
                             producerJam.Remove(asm);
                             asm.ClearQueue();
                             data2.hold = 10 * (data2.jam < 1 | data2.hold < 1 ? data2.jam = Math.Min(10, data2.jam + 1) : data2.jam);
@@ -2642,7 +2642,7 @@ PhysicalGunObject/
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, Math.Max(0.2, 0.5 * oldspeed)), Math.Min(1000.0, 2.0 * oldspeed));
                     data2.prdSpeed["" + asm.BlockDefinition] = speed;
                     if ((int)(oldspeed + 0.5) != (int)(speed + 0.5))
-                        debug.Log("  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + (int)(oldspeed * 100) / 100.0 + " -> " + (int)(speed * 100) / 100.0 + "/cycle");
+                        debug.Log(() => "  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + (int)(oldspeed * 100) / 100.0 + " -> " + (int)(speed * 100) / 100.0 + "/cycle");
                 }
                 if (assemblerItems[asm].Count == 0) assemblerItems[asm].UnionWith(itemLevel.Keys); else assemblerItems[asm].IntersectWith(itemLevel.Keys);
                 speed = data != null && data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0;
@@ -2651,7 +2651,7 @@ PhysicalGunObject/
                     if (data2 != null) data2.jam = Math.Max(0, data2.jam - (data2.hold < 1 ? 1 : 0));
                     if (ready = assemblerItems[asm].Count > 0) assemblers.Add(asm);
                 }
-                debug.Log(
+                debug.Log(() =>
                     "  " + asm.CustomName + (asm.IsQueueEmpty ? " idle" : (asm.Mode == MyAssemblerMode.Assembly ? " making " : " breaking ") + queue[0].Amount + "x " + (item.type == "" ? "unknown" : subLabel[item.subType] + (!itemLevel.ContainsKey(item) ? "" : " (L=" + itemLevel[item] + "%)")) + (queue.Count <= 1 ? "" : ", then " + queue[1].Amount + "x " + (item2.type == "" ? "unknown" : subLabel[item2.subType] + (!itemLevel.ContainsKey(item2) ? "" : " (L=" + itemLevel[item2] + "%)")))) + "; " + (itemLevel.Count == 0 ? "nothing to do" : ready ? "ready" : assemblerItems[asm].Count == 0 ? "restricted" : "busy")
                 );
             }
@@ -2686,10 +2686,10 @@ PhysicalGunObject/
                         amount = Math.Max((int)(10 * speed), 10);
                         asm.AddQueueItem(data.blueprint, (double)amount);
                         itemLevel[item] += (int)Math.Ceiling(1e8 * amount / data.quota);
-                        debug.Log("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
+                        debug.Log(() => "  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
                     }
                     else
-                        debug.Log("  " + asm.CustomName + " unassigned, nothing to do");
+                        debug.Log(() => "  " + asm.CustomName + " unassigned, nothing to do");
                 }
             }
         }
