@@ -599,16 +599,13 @@ PhysicalGunObject/
             argQuotaStable = DEFAULT_ARG_QUOTA_STABLE;
             debugLogic.Clear();
 
-            string arg, value;
-            bool hasValue;
             foreach (System.Text.RegularExpressions.Match match in argParseRegex.Matches(Me.CustomData))
             {
-                arg = match.Groups[1].Value.ToLower();
-                hasValue = match.Groups[2].Success;
+                var arg = match.Groups[1].Value.ToLower();
+                var value = "";
+                var hasValue = match.Groups[2].Success;
                 if (hasValue)
                     value = match.Groups[2].Value.Trim();
-                else
-                    value = "";
                 switch (arg)
                 {
                     case "rewrite":
