@@ -108,9 +108,6 @@ namespace IngameScript
         InventoryVolume InventoryUsage(IMyInventory inventory) =>
             new InventoryVolume(inventory.MaxVolume, inventory.CurrentVolume);
 
-        bool IsLocal(IMyTerminalBlock block) =>
-            Me.IsSameConstructAs(block);
-
         bool IsMonitored(IMyTerminalBlock block) =>
             IsLocal(block) && block.IsFunctional && IsMonitorTagged(block);
 
