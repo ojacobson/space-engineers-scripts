@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Drill Manager", "Drill Mana
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common Predicates", "Common Predicates\Common Predicates.shproj", "{61EBA249-19F3-48B6-A25B-A4CEE90168BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Taleden's Inventory Manager", "Taleden's Inventory Manager\Taleden's Inventory Manager.csproj", "{306C0835-4DE2-4C87-AFA9-A5CCBCF2B1AA}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Common Predicates\Common_Predicates.projitems*{61eba249-19f3-48b6-a25b-a4cee90168ba}*SharedItemsImports = 13
@@ -18,6 +20,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}.Debug|x64.ActiveCfg = Debug|x64
 		{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}.Debug|x64.Build.0 = Debug|x64
+		{306C0835-4DE2-4C87-AFA9-A5CCBCF2B1AA}.Debug|x64.ActiveCfg = Debug|x64
+		{306C0835-4DE2-4C87-AFA9-A5CCBCF2B1AA}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
