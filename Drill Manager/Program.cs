@@ -75,7 +75,7 @@ namespace IngameScript
         List<IMyTerminalBlock> measuredBlocks = new List<IMyTerminalBlock>();
         Goal InventoryGoal()
         {
-            GridTerminalSystem.GetBlocksOfType(measuredBlocks, IsMonitoried);
+            GridTerminalSystem.GetBlocksOfType(measuredBlocks, IsMonitored);
 
             var inventoryRatio = measuredBlocks
                 .Select(ContainerUsage)
@@ -111,7 +111,7 @@ namespace IngameScript
         bool IsLocal(IMyTerminalBlock block) =>
             Me.IsSameConstructAs(block);
 
-        bool IsMonitoried(IMyTerminalBlock block) =>
+        bool IsMonitored(IMyTerminalBlock block) =>
             IsLocal(block) && block.IsFunctional && IsMonitorTagged(block);
 
         const string MONITOR_TAG = "[DM MONITOR]";
