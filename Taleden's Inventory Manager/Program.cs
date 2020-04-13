@@ -528,22 +528,31 @@ PhysicalGunObject/
 
         void InitItems(string data)
         {
-            string itype = "";
-            long minimum;
-            float ratio;
+            string categoryTypeId = "";
             foreach (string line in data.Split(NEWLINE, REE))
             {
                 string[] words = (line.Trim() + ",,,,").Split(SPACECOMMA, 6);
                 words[0] = words[0].Trim();
                 if (words[0].EndsWith("/"))
                 {
-                    itype = words[0].Substring(0, words[0].Length - 1);
+                    categoryTypeId = words[0].Substring(0, words[0].Length - 1);
                 }
-                else if (itype != "" & words[0].StartsWith("/"))
+                else if (categoryTypeId != "" & words[0].StartsWith("/"))
                 {
-                    long.TryParse(words[1], out minimum);
-                    float.TryParse(words[2].Substring(0, (words[2] + "%").IndexOf("%")), out ratio);
-                    InventoryItemData.InitItem(itype, words[0].Substring(1), minimum, ratio, words[3].Trim(), itype == "Ingot" | itype == "Ore" ? null : words[4].Trim());
+                    string itemSubType = words[0].Substring(1);
+
+                    long absoluteQuota;
+                    long.TryParse(words[1], out absoluteQuota);
+
+                    string ratioQuotaExpression = words[2].Substring(0, (words[2] + "%").IndexOf("%"));
+                    float ratioQuota;
+                    float.TryParse(ratioQuotaExpression, out ratioQuota);
+
+                    string label = words[3].Trim();
+
+                    string blueprint = categoryTypeId == "Ingot" | categoryTypeId == "Ore" ? null : words[4].Trim();
+
+                    InventoryItemData.InitItem(categoryTypeId, itemSubType, absoluteQuota, ratioQuota, label, blueprint);
                 }
             }
         }
