@@ -443,8 +443,8 @@ PhysicalGunObject/
                     return;
                 }
             }
-            else
-                currentCycleStartTime = DateTime.Now;
+
+            currentCycleStartTime = DateTime.Now;
             echoOutput.Clear();
             int processStepTmp = processStep;
             bool didAtLeastOneProcess = false;
