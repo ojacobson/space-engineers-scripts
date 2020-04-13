@@ -1638,7 +1638,7 @@ PhysicalGunObject/
                         panel2 = slim != null ? slim.FatBlock as IMyTextPanel : null;
                         if (panel2 != null && "" + panel2.BlockDefinition == "" + panel.BlockDefinition & panel2.GetPublicTitle().ToUpper().Contains("QUOTAS"))
                         {
-                            spanLines[x] = panel2.GetPublicText().Split('\n');
+                            spanLines[x] = panel2.GetText().Split('\n');
                             height = Math.Max(height, spanLines[x].Length);
                         }
                     }
@@ -1846,19 +1846,6 @@ PhysicalGunObject/
                                 name.Append((attr = String.Join(":", fields).ToLower()) + " ");
                                 debugText.Add("Invalid panel span rule: " + attr);
                             }
-                        }
-                        else if (attr == "THE")
-                        {
-                            egg = true;
-                        }
-                        else if (attr == "ENCHANTER" & egg)
-                        {
-                            egg = false;
-                            blkPnl.SetValueFloat("FontSize", 0.2f);
-                            blkPnl.WritePublicTitle("TIM the Enchanter");
-                            //blkPnl.WritePublicText(panelFiller, false);
-                            blkPnl.ShowPublicTextOnScreen();
-                            name.Append("THE ENCHANTER ");
                         }
                         else if (attr.Length >= 3 & "QUOTAS".StartsWith(attr))
                         {
@@ -3040,11 +3027,12 @@ PhysicalGunObject/
 
                 foreach (IMyTextPanel panel in statusPanels)
                 {
+                    panel.ContentType = ContentType.TEXT_AND_IMAGE;
+                    panel.TextPadding = 0;
                     panel.WritePublicTitle("Script Status");
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Status panels cannot be spanned");
-                    panel.WritePublicText(sb.ToString());
-                    panel.ShowPublicTextOnScreen();
+                    panel.WriteText(sb);
                 }
             }
 
@@ -3057,11 +3045,12 @@ PhysicalGunObject/
                 }
                 foreach (IMyTextPanel panel in debugPanels)
                 {
+                    panel.ContentType = ContentType.TEXT_AND_IMAGE;
+                    panel.TextPadding = 0;
                     panel.WritePublicTitle("Script Debugging");
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Debug panels cannot be spanned");
-                    panel.WritePublicText(String.Join("\n", debugText));
-                    panel.ShowPublicTextOnScreen();
+                    panel.WriteText(String.Join("\n", debugText));
                 }
             }
             blockErrors.Clear();
@@ -3129,10 +3118,11 @@ PhysicalGunObject/
                                 text = String.Join("\n", spanLines[x], r, rows);
                             if (x == 0)
                                 text += y == 0 ? before : y + 1 == spany ? after : "";
-                            spanpanel.SetValueFloat("FontSize", fontsize);
+                            spanpanel.FontSize = fontsize;
+                            spanpanel.ContentType = ContentType.TEXT_AND_IMAGE;
+                            spanpanel.TextPadding = 0;
                             spanpanel.WritePublicTitle(title + " (" + (x + 1) + "," + (y + 1) + ")");
-                            spanpanel.WritePublicText(text);
-                            spanpanel.ShowPublicTextOnScreen();
+                            spanpanel.WriteText(text);
                         }
                         r += height;
                     }
@@ -3140,10 +3130,11 @@ PhysicalGunObject/
             }
             else
             {
-                panel.SetValueFloat("FontSize", fontsize);
+                panel.FontSize = fontsize;
+                panel.ContentType = ContentType.TEXT_AND_IMAGE;
+                panel.TextPadding = 0;
                 panel.WritePublicTitle(title);
-                panel.WritePublicText(before + sf.ToString(width) + after);
-                panel.ShowPublicTextOnScreen();
+                panel.WriteText(before + sf.ToString(width) + after);
             }
         }
 
