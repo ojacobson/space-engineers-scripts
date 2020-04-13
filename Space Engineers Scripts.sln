@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1022
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Drill Manager", "Drill Manager\Drill Manager.csproj", "{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}.Debug|x64.ActiveCfg = Debug|x64
+		{6F9177B3-55F6-4A65-BC8F-EF410EB0EF42}.Debug|x64.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FAC25C7D-F09D-4227-88DB-739934214AF2}
+	EndGlobalSection
+EndGlobal

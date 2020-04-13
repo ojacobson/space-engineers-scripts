@@ -1,0 +1,15 @@
+﻿Drill Manager
+-------------
+
+This script automatically starts and stops your drills, pistons, and any other tagged assemblies in response to inventory levels. This script is designed to ease monitoring and management of large automated drills, nanobot drill systems, and other constructions that can easily pull up large quantities of ore that needs refining.
+
+To set it up:
+
+1. Install this script in a programmable block on the construction whose drills you want to control.
+2. Tag drills, pistons, and other functional blocks you want to control with [DM CONTROL] in the block name.
+3. Tag inventory blocks, such as cargo containers, with [DM MONITOR] in the block name.
+4. (Optional) Open the custom data on the programmable block and change the start and stop thresholds.
+
+Whenever the inventory in the tagged inventory blocks falls below the start level, all controlled blocks will be turned on. When the inventory in the monitored inventory blocks rises above the stop level, the controlled blocks will be turned off. Between those levels, the script will leave controlled blocks in whatever state it finds them.
+
+The default start and stop levels are 10% and 90%, respectively.
