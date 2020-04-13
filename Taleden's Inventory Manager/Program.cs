@@ -316,7 +316,7 @@ PhysicalGunObject/
         TimeSpan cycleUpdateWaitTime = new TimeSpan(0, 0, 0, 0, UPDATE_REAL_TIME);
         long totalCallCount;
         int numberTransfers;
-        int numberRefineres;
+        int numberRefineries;
         int numberAssemblers;
         int processStep;
         readonly Action[] processSteps;
@@ -446,16 +446,16 @@ PhysicalGunObject/
 
             currentCycleStartTime = DateTime.Now;
             echoOutput.Clear();
-            int processStepTmp = processStep;
-            bool didAtLeastOneProcess = false;
+            int startingStep = processStep;
 
             // output terminal info
             EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status every cycle
             debugText.Clear();
-            numberTransfers = numberRefineres = numberAssemblers = 0;
+            numberTransfers = numberRefineries = numberAssemblers = 0;
 
+            bool didAtLeastOneStep = false;
             try
             {
                 do
@@ -463,7 +463,7 @@ PhysicalGunObject/
                     debugText.Add(string.Format("> Doing step {0}", processStep));
                     processSteps[processStep]();
                     processStep++;
-                    didAtLeastOneProcess = true;
+                    didAtLeastOneStep = true;
                 } while (processStep < processSteps.Length && DoExecutionLimitCheck());
                 // if we get here it means we completed all the process steps
                 processStep = 0;
@@ -495,31 +495,40 @@ PhysicalGunObject/
             }
 
             // update script status and debug panels on every cycle step
-            string msg, stepText;
-            int theoryProcessStep = processStep == 0 ? 13 : processStep;
-            int exTime = ExecutionTime;
-            double exLoad = Math.Round(100.0f * ExecutionLoad, 1);
+            int goalStep = processStep == 0 ? 13 : processStep;
+
+            int executionTime = ExecutionTime;
+            double executionLoadPercent = Math.Round(100.0f * ExecutionLoad, 1);
+
+            int stepCompleted = (processStep == 0 ? processSteps.Length : processStep);
+            int steps = processSteps.Length;
+
             int unused;
-            statsLog[totalCallCount % statsLog.Length] = ScreenFormatter.Format("" + totalCallCount, 80, out unused, 1) +
-                                                         ScreenFormatter.Format((processStep == 0 ? processSteps.Length : processStep) + " / " + processSteps.Length, 125 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format(exTime + " ms", 145 + unused, out unused, 1) +
-                                                         ScreenFormatter.Format(exLoad + "%", 105 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberTransfers, 65 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberRefineres, 65 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberAssemblers, 65 + unused, out unused, 1, true) +
+            statsLog[totalCallCount % statsLog.Length] = ScreenFormatter.Format($"{totalCallCount}", 80, out unused, 1) +
+                                                         ScreenFormatter.Format($"{stepCompleted} / {steps}", 125 + unused, out unused, 1, true) +
+                                                         ScreenFormatter.Format($"{executionTime} ms", 145 + unused, out unused, 1) +
+                                                         ScreenFormatter.Format($"{executionLoadPercent}%", 105 + unused, out unused, 1, true) +
+                                                         ScreenFormatter.Format($"{numberTransfers}", 65 + unused, out unused, 1, true) +
+                                                         ScreenFormatter.Format($"{numberRefineries}", 65 + unused, out unused, 1, true) +
+                                                         ScreenFormatter.Format($"{numberAssemblers}", 65 + unused, out unused, 1, true) +
                                                          "\n";
-            if (processStep == 0 && processStepTmp == 0 && didAtLeastOneProcess)
-                stepText = "all steps";
-            else if (processStep == processStepTmp)
-                stepText = string.Format("step {0} partially", processStep);
-            else if (theoryProcessStep - processStepTmp == 1)
-                stepText = string.Format("step {0}", processStepTmp);
-            else
-                stepText = string.Format("steps {0} to {1}", processStepTmp, theoryProcessStep - 1);
-            EchoR(msg = string.Format("Completed {0} in {1}ms, {2}% load ({3} instructions)",
-                stepText, exTime, exLoad, Runtime.CurrentInstructionCount));
+
+            string stepText = StepStatusText(startingStep, processStep, goalStep, didAtLeastOneStep);
+            var msg = $"Completed {stepText} in {executionTime}ms, {executionLoadPercent}% load ({Runtime.CurrentInstructionCount} instructions)";
+            EchoR(msg);
             debugText.Add(msg);
             UpdateStatusPanels();
+        }
+
+        string StepStatusText(int startingStep, int processStep, int goalStep, bool didAtLeastOneStep)
+        {
+            if (processStep == 0 && startingStep == 0 && didAtLeastOneStep)
+                return "all steps";
+            else if (processStep == startingStep)
+                return $"step {processStep} partially";
+            else if (goalStep - startingStep == 1)
+                return $"step {startingStep}";
+            return $"steps {startingStep} to {goalStep - 1}";
         }
 
         #endregion
@@ -2526,7 +2535,7 @@ PhysicalGunObject/
                     }
                     if (isub != "")
                     {
-                        numberRefineres++;
+                        numberRefineries++;
                         rfn.UseConveyorSystem = false;
                         priority = rfn.GetInventory(0).IsItemAt(0) ? -4 : -3;
                         speed = typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0;
