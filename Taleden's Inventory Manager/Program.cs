@@ -723,9 +723,8 @@ PhysicalGunObject/
             // output terminal info
             EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
-            // reset status and debugging data every cycle
+            // reset status every cycle
             debugText.Clear();
-            debugLogic.Clear();
             numberTransfers = numberRefineres = numberAssemblers = 0;
 
             try
@@ -853,6 +852,7 @@ PhysicalGunObject/
             argScanGrinders = DEFAULT_ARG_SCAN_GRINDERS;
             argScanWelders = DEFAULT_ARG_SCAN_WELDERS;
             argQuotaStable = DEFAULT_ARG_QUOTA_STABLE;
+            debugLogic.Clear();
 
             string arg, value;
             bool hasValue;
