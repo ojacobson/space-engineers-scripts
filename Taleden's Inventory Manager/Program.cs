@@ -1361,7 +1361,7 @@ PhysicalGunObject/
                         spanLines[x] = empty;
                         slim = panel.CubeGrid.GetCubeBlock(new Vector3I(panel.Position + x * wide * size * matrix.Right + y * size * matrix.Down));
                         panel2 = slim != null ? slim.FatBlock as IMyTextPanel : null;
-                        if (panel2 != null && "" + panel2.BlockDefinition == "" + panel.BlockDefinition & panel2.GetPublicTitle().ToUpper().Contains("QUOTAS"))
+                        if (panel2 != null && "" + panel2.BlockDefinition == "" + panel.BlockDefinition)
                         {
                             spanLines[x] = panel2.GetText().Split('\n');
                             height = Math.Max(height, spanLines[x].Length);
