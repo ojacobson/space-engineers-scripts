@@ -38,6 +38,8 @@
   <Import Project="MDK/MDK.options.props" />
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
+    <Compile Include="Make.cs" />
+    <Compile Include="Program.Predicates.cs" />
     <Compile Include="Program.GridScanning.cs" />
     <Compile Include="IgnoreExecutionException.cs" />
     <Compile Include="InventoryItemData.cs" />
@@ -57,6 +59,7 @@
     <AdditionalFiles Include="MDK\whitelist.cache" />
     <Compile Include="PutOffExecutionException.cs" />
     <Compile Include="ScreenFormatter.cs" />
+    <Compile Include="Ship.cs" />
   </ItemGroup>
   <Import Project="..\Common Makers\Common_Makers.projitems" Label="Shared" />
   <Import Project="..\Collections\Collections.projitems" Label="Shared" />

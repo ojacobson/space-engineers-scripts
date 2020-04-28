@@ -11,7 +11,7 @@ namespace IngameScript
     {
         HashSet<IMyCubeGrid> DockedGrids = new HashSet<IMyCubeGrid>();
 
-        // True iff the target grid is docked to the grid under control of this script, taking dock tags into account.
+        // True iff the grid the target block is part of is under the control of this script, taking dock tags into account.
         // Only as fresh as the last call to ScanGrids().
         bool DockedTo(IMyTerminalBlock block) =>
             DockedGrids.Contains(block.CubeGrid);
@@ -19,166 +19,208 @@ namespace IngameScript
         // Update the result of `DockedTo` based on the current set of reachable grids.
         void ScanGrids()
         {
-            Dictionary<IMyCubeGrid, int> gridShip = new Dictionary<IMyCubeGrid, int>();
-            List<HashSet<IMyCubeGrid>> shipGrids = new List<HashSet<IMyCubeGrid>>();
-            List<string> shipName = new List<string>();
-            Dictionary<int, Dictionary<int, List<string>>> shipShipDocks = new Dictionary<int, Dictionary<int, List<string>>>();
-
-            var gridLinks = ScanMechanicalLinks();
-            ScanShips(gridLinks, gridShip, shipGrids, shipName);
-            ScanShipConnectors(gridShip, shipGrids, shipName, shipShipDocks);
-            ScanDockedGrids(gridShip, shipGrids, shipName, shipShipDocks);
+            var linkedGrids = ScanMechanicalLinks();
+            var connectors = ScanConnectors();
+            var shipsByGrid = ScanShips(linkedGrids, connectors);
+            var dockedShipsByShip = ScanShipConnectors(shipsByGrid, connectors);
+            ScanDockedGrids(shipsByGrid, dockedShipsByShip);
         }
 
-        Queue<int> ShipScanQueue = new Queue<int>();
-        HashSet<int> ShipsScanned = new HashSet<int>();
-        void ScanDockedGrids(Dictionary<IMyCubeGrid, int> gridShip, List<HashSet<IMyCubeGrid>> shipGrids, List<string> shipName, Dictionary<int, Dictionary<int, List<string>>> shipShipDocks)
+        /*
+         * Some theory:
+         *  - A _grid_ is an IMyCubeGrid, i.e., a discrete physical simulation in the game world with solid-body
+         *    physics, built out of adjacently-connected solid blocks. Each grid has a name.
+         *  - A _mechanical link_ is an IMyMechanicalConnectionBlock, i.e., a block joining two grids quasi-permanently
+         *    via a physics constraint. This does not include connectors, but does include pistons, rotors, and custom
+         *    joint blocks.
+         *  - A _ship_ is a set of grids that are connected to one another via mechanical links. Each ship has a name,
+         *    derived from the name of the largest grid (by extent) in the ship. This includes stations.
+         *  - Two ships are _docked_ if they share a connector pair which are either untagged, or which share at least
+         *    one DOCK tag.
+         *  
+         *  The goal here is to identify the set of grids docked to "this" grid (the one the script is running from). TIM
+         *  will only manage inventories that are part of those grids; inventories on other grids will not be affected.
+         *  This builds up to that set in stages. The final set is stored in the DockedGrids property of this class and
+         *  can be queried using the DockedTo predicate.
+         *  
+         *  1. First, it builds up a graph of connected grids by scanning mechanical connections.
+         *  2. Then, it groups connected components of that graph, and any grids containing a connector, into ships.
+         *  3. Then, it identifies links between those ships using connector pairs, ruling out tagged connectors with
+         *     no matching tags.
+         *  4. Finally, it walks the graph from the current grid's ship, identifying only ships connected transitively
+         *     to it.
+         *  
+         *  Note that the game allows ships to contain "interior" connectors, which link the ship to itself (between
+         *  grids or on the same grid). This algorithm takes some care to avoid getting suckered into an infinite
+         *  loop by ships that happen to include these. (I got bit by this testing the algorithm!)
+         *  
+         *  Allocation and garbage collection hit Space Engineers unusually hard, so this code makes heavy use of
+         *  properties to reuse previously-allocated objects. This makes the code highly stateful, and very much
+         *  non-reentrant. For example, calling ScanMechanicalLinks() twice will return the same list both times,
+         *  although the contents may change from call to call. To make the code easier to follow, data dependencies
+         *  are expressed through function parameters and return values, even though these methods could use the
+         *  properties to access one anothers' data.
+         */
+        
+        List<IMyMechanicalConnectionBlock> MechanicalConnections = new List<IMyMechanicalConnectionBlock>();
+        Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> LinkedGrids = new Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>>();
+        Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> ScanMechanicalLinks()
         {
-            // starting "here", traverse all docked ships
-            ShipScanQueue.Clear();
-            ShipsScanned.Clear();
+            LinkedGrids.Clear();
 
-            DockedGrids.Clear();
-            DockedGrids.Add(Me.CubeGrid);
-            int ship;
-            if (!gridShip.TryGetValue(Me.CubeGrid, out ship))
-                return;
-            ShipsScanned.Add(ship);
-            DockedGrids.UnionWith(shipGrids[ship]);
-            ShipScanQueue.Enqueue(ship);
-            while (ShipScanQueue.Count > 0)
+            GridTerminalSystem.GetBlocksOfType(MechanicalConnections, IsConnected);
+            foreach (var joint in MechanicalConnections)
             {
-                var s1 = ShipScanQueue.Dequeue();
-                Dictionary<int, List<string>> shipDocks;
-                if (!shipShipDocks.TryGetValue(s1, out shipDocks))
-                    continue;
-                foreach (int ship2 in shipDocks.Keys)
-                {
-                    if (ShipsScanned.Add(ship2))
-                    {
-                        DockedGrids.UnionWith(shipGrids[ship2]);
-                        ShipScanQueue.Enqueue(ship2);
-                        debugText.Add(shipName[ship2] + " docked to " + shipName[s1] + " at " + String.Join(", ", shipDocks[ship2]));
-                    }
-                }
+                var fromGrid = joint.CubeGrid;
+                var toGrid = joint.TopGrid;
+
+                LinkedGrids.GetValueOrDefault(fromGrid, Make.HashSet<IMyCubeGrid>).Add(toGrid);
+                LinkedGrids.GetValueOrDefault(toGrid, Make.HashSet<IMyCubeGrid>).Add(fromGrid);
             }
+
+            return LinkedGrids;
         }
 
         List<IMyShipConnector> Connectors = new List<IMyShipConnector>();
-        HashSet<string> LeftDockTags = new HashSet<string>();
-        HashSet<string> RightDockTags = new HashSet<string>();
-        void ScanShipConnectors(Dictionary<IMyCubeGrid, int> gridShip, List<HashSet<IMyCubeGrid>> shipGrids, List<string> shipName, Dictionary<int, Dictionary<int, List<string>>> shipShipDocks)
+        List<IMyShipConnector> ScanConnectors()
         {
-            // connectors require at least one shared dock tag, or no tags on either
-
             GridTerminalSystem.GetBlocksOfType(Connectors);
-            foreach (var block in Connectors)
-            {
-                var conn2 = block.OtherConnector;
-                if (conn2 != null && block.EntityId < conn2.EntityId & block.Status == MyShipConnectorStatus.Connected)
-                {
-                    LeftDockTags.Clear();
-                    RightDockTags.Clear();
-                    var blockNameMatch = tagRegex.Match(block.CustomName);
-                    if (blockNameMatch.Success)
-                    {
-                        foreach (string attr in blockNameMatch.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE))
-                        {
-                            if (attr.StartsWith("DOCK:", OIC))
-                                LeftDockTags.UnionWith(attr.Substring(5).ToUpper().Split(COLON, REE));
-                        }
-                    }
-                    var targetNameMatch = tagRegex.Match(conn2.CustomName);
-                    if ((targetNameMatch = tagRegex.Match(conn2.CustomName)).Success)
-                    {
-                        foreach (string attr in targetNameMatch.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE))
-                        {
-                            if (attr.StartsWith("DOCK:", OIC))
-                                RightDockTags.UnionWith(attr.Substring(5).ToUpper().Split(COLON, REE));
-                        }
-                    }
-                    if ((LeftDockTags.Count > 0 | RightDockTags.Count > 0) & !LeftDockTags.Overlaps(RightDockTags))
-                        continue;
-                    var g1 = block.CubeGrid;
-                    var g2 = conn2.CubeGrid;
-                    int s1;
-                    if (!gridShip.TryGetValue(g1, out s1))
-                    {
-                        gridShip[g1] = s1 = shipGrids.Count;
-                        shipGrids.Add(new HashSet<IMyCubeGrid> { g1 });
-                        shipName.Add(g1.CustomName);
-                    }
-                    int s2;
-                    if (!gridShip.TryGetValue(g2, out s2))
-                    {
-                        gridShip[g2] = s2 = shipGrids.Count;
-                        shipGrids.Add(new HashSet<IMyCubeGrid> { g2 });
-                        shipName.Add(g2.CustomName);
-                    }
-                    shipShipDocks
-                        .GetValueOrDefault(s1, Make.Dictionary<int, List<string>>)
-                        .GetValueOrDefault(s2, Make.List<string>())
-                        .Add(block.CustomName);
-                    shipShipDocks
-                        .GetValueOrDefault(s2, Make.Dictionary<int, List<string>>)
-                        .GetValueOrDefault(s1, Make.List<string>())
-                        .Add(conn2.CustomName);
-                }
-            }
+            return Connectors;
         }
 
-        List<IMyCubeGrid> GridScanQueue = new List<IMyCubeGrid>(); // actual Queue lacks AddRange
-        void ScanShips(Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> gridLinks, Dictionary<IMyCubeGrid, int> gridShip, List<HashSet<IMyCubeGrid>> shipGrids, List<string> shipName)
+
+        Dictionary<IMyCubeGrid, Ship> ShipsByGrid = new Dictionary<IMyCubeGrid, Ship>();
+        Dictionary<IMyCubeGrid, Ship> ScanShips(Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> linkedGrids, List<IMyShipConnector> connectors)
         {
-            GridScanQueue.Clear();
+            ShipsByGrid.Clear();
 
             // each connected component of mechanical links is a "ship"
-            foreach (IMyCubeGrid grid in gridLinks.Keys)
+            foreach (var gridEntry in linkedGrids)
             {
-                if (!gridShip.ContainsKey(grid))
+                var grid = gridEntry.Key;
+                var connectedGrids = gridEntry.Value;
+
+                var ship = ShipsByGrid.GetValueOrDefault(grid, Make.Ship(grid));
+
+                foreach (var connectedGrid in connectedGrids)
                 {
-                    var s1 = (grid.Max - grid.Min + Vector3I.One).Size;
-                    var g1 = grid;
-                    gridShip[grid] = shipGrids.Count;
-                    var grids = new HashSet<IMyCubeGrid> { grid };
-                    GridScanQueue.Clear();
-                    GridScanQueue.AddRange(gridLinks[grid]);
-                    for (var q = 0; q < GridScanQueue.Count; q++)
+                    ShipsByGrid[connectedGrid] = ship;
+                    ship.Add(connectedGrid);
+                }
+            }
+
+            // every connector is on a ship, as well, and those ships may not include mechanical links
+            foreach (var connector in connectors)
+            {
+                var grid = connector.CubeGrid;
+                ShipsByGrid.GetValueOrDefault(grid, Make.Ship(grid));
+            }
+
+            return ShipsByGrid;
+        }
+
+        HashSet<string> NearConnectorTags = new HashSet<string>();
+        HashSet<string> FarConnectorTags = new HashSet<string>();
+        Dictionary<Ship, HashSet<Ship>> DockedShipsByShip = new Dictionary<Ship, HashSet<Ship>>();
+        Dictionary<Ship, HashSet<Ship>> ScanShipConnectors(Dictionary<IMyCubeGrid, Ship> shipsByGrid, List<IMyShipConnector> connectors)
+        {
+            DockedShipsByShip.Clear();
+
+            // connectors require at least one shared dock tag, or no tags on either
+            foreach (var nearConnector in connectors)
+            {
+                if (nearConnector.Status != MyShipConnectorStatus.Connected)
+                    continue;
+
+                var farConnector = nearConnector.OtherConnector;
+                // Only consider each pair of connectors once (regardless of the order they're encountered in), to avoid
+                // doing the same regular expression matching twice. Instead, handle both sides of the connector at once
+                // when they're presented in the canonical ordering, and ignore them the other time they're presented.
+                if (nearConnector.EntityId > farConnector.EntityId)
+                    continue;
+
+                ParseConnectorTags(nearConnector, NearConnectorTags);
+                ParseConnectorTags(farConnector, FarConnectorTags);
+
+                if (!MatchedConnectorTags(NearConnectorTags, FarConnectorTags))
+                    continue;
+
+                var nearGrid = nearConnector.CubeGrid;
+                var farGrid = farConnector.CubeGrid;
+
+                var nearShip = shipsByGrid[nearGrid];
+                var farShip = shipsByGrid[farGrid];
+
+                DockedShipsByShip
+                    .GetValueOrDefault(nearShip, Make.HashSet<Ship>)
+                    .Add(farShip);
+                DockedShipsByShip
+                    .GetValueOrDefault(farShip, Make.HashSet<Ship>)
+                    .Add(nearShip);
+            }
+
+            return DockedShipsByShip;
+        }
+
+        bool MatchedConnectorTags(HashSet<string> nearConnectorTags, HashSet<String> farConnectorTags)
+        {
+            if (nearConnectorTags.Empty() && farConnectorTags.Empty())
+            {
+                return true;
+            }
+
+            return nearConnectorTags.Overlaps(farConnectorTags);
+        }
+
+        void ParseConnectorTags(IMyShipConnector connector, HashSet<string> intoTags)
+        {
+            intoTags.Clear();
+            var match = tagRegex.Match(connector.CustomName);
+            if (match.Success)
+            {
+                foreach (var attr in match.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE))
+                {
+                    if (attr.StartsWith("DOCK:", OIC))
                     {
-                        var g2 = GridScanQueue[q];
-                        if (!grids.Add(g2))
-                            continue;
-                        var s2 = (g2.Max - g2.Min + Vector3I.One).Size;
-                        g1 = s2 > s1 ? g2 : g1;
-                        s1 = s2 > s1 ? s2 : s1;
-                        gridShip[g2] = shipGrids.Count;
-                        GridScanQueue.AddRange(gridLinks[g2].Except(grids));
+                        var dockTags = attr.Substring(5).ToUpper().Split(COLON, REE);
+                        intoTags.UnionWith(dockTags);
                     }
-                    shipGrids.Add(grids);
-                    shipName.Add(g1.CustomName);
                 }
             }
         }
 
-        List<IMyMechanicalConnectionBlock> MechanicalConnections = new List<IMyMechanicalConnectionBlock>();
-        Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> GridLinks = new Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>>();
-        Dictionary<IMyCubeGrid, HashSet<IMyCubeGrid>> ScanMechanicalLinks()
+        Queue<Ship> ShipScanQueue = new Queue<Ship>();
+        HashSet<Ship> ShipsScanned = new HashSet<Ship>();
+        void ScanDockedGrids(Dictionary<IMyCubeGrid, Ship> shipsByGrid, Dictionary<Ship, HashSet<Ship>> dockedShipsByGrid)
         {
-            GridLinks.Clear();
+            DockedGrids.Clear();
 
-            // find mechanical links
-            GridTerminalSystem.GetBlocksOfType(MechanicalConnections);
-            foreach (var block in MechanicalConnections)
+            ShipScanQueue.Clear();
+            ShipsScanned.Clear();
+
+            // starting "here", traverse all docked ships
+            var myGrid = Me.CubeGrid;
+            var myShip = shipsByGrid[myGrid];
+            ShipScanQueue.Enqueue(myShip);
+
+            while (!ShipScanQueue.Empty())
             {
-                var g1 = block.CubeGrid;
-                var g2 = block.TopGrid;
-                if (g2 == null)
-                    continue;
-                GridLinks.GetValueOrDefault(g1, Make.HashSet<IMyCubeGrid>).Add(g2);
-                GridLinks.GetValueOrDefault(g2, Make.HashSet<IMyCubeGrid>).Add(g1);
-            }
+                var ship = ShipScanQueue.Dequeue();
 
-            return GridLinks;
+                ShipsScanned.Add(ship);
+                DockedGrids.UnionWith(ship.Grids);
+                if (dockedShipsByGrid.ContainsKey(ship))
+                {
+                    foreach (var dockedShip in dockedShipsByGrid[ship])
+                    {
+                        if (!ShipsScanned.Contains(dockedShip))
+                        {
+                            debugText.Add($"{ship.Name} docked to {dockedShip.Name}");
+                            ShipScanQueue.Enqueue(dockedShip);
+                        }
+                    }
+                }
+            }
         }
     }
 }
