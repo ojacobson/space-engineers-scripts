@@ -7,7 +7,7 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript
 {
-    partial class Make
+    static partial class Make
     {
         public static Func<Ship> Ship(IMyCubeGrid grid) =>
             () => new Ship(grid);
