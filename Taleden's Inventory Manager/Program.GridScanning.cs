@@ -44,7 +44,8 @@ namespace IngameScript
          *  can be queried using the DockedTo predicate.
          *  
          *  1. First, it builds up a graph of connected grids by scanning mechanical connections.
-         *  2. Then, it groups connected components of that graph, and any grids containing a connector, into ships.
+         *  2. Then, it groups connected components of that graph, any grids containing a connector, and the grid
+         *     containing this script, into ships.
          *  3. Then, it identifies links between those ships using connector pairs, ruling out tagged connectors with
          *     no matching tags.
          *  4. Finally, it walks the graph from the current grid's ship, identifying only ships connected transitively
@@ -115,6 +116,10 @@ namespace IngameScript
                 var grid = connector.CubeGrid;
                 ShipsByGrid.GetValueOrDefault(grid, Make.Ship(grid));
             }
+
+            // ensure that this ship is always in the set of connected grids, even if it has no connectors or mechanical joints
+            var myGrid = Me.CubeGrid;
+            ShipsByGrid.GetValueOrDefault(myGrid, Make.Ship(myGrid));
 
             return ShipsByGrid;
         }
