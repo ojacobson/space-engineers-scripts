@@ -39,6 +39,7 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="Make.cs" />
+    <Compile Include="Program.DebugOutput.cs" />
     <Compile Include="Program.Predicates.cs" />
     <Compile Include="Program.GridScanning.cs" />
     <Compile Include="IgnoreExecutionException.cs" />

@@ -266,7 +266,6 @@ PhysicalGunObject/
             ARGUMENT_PARSE_REGEX,
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Multiline |
             System.Text.RegularExpressions.RegexOptions.Compiled);
-        readonly string[] argValidDebugValues = { "quotas", "sorting", "refineries", "assemblers" };
 
         #endregion
 
@@ -331,8 +330,6 @@ PhysicalGunObject/
         Dictionary<IMyTextPanel, List<string>> ipanelTypes = new Dictionary<IMyTextPanel, List<string>>();
         List<IMyTextPanel> statusPanels = new List<IMyTextPanel>();
         List<IMyTextPanel> debugPanels = new List<IMyTextPanel>();
-        HashSet<string> debugLogic = new HashSet<string>();
-        List<string> debugText = new List<string>();
         Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockGtag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
         Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockTag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
         HashSet<IMyInventory> invenLocked = new HashSet<IMyInventory>();
@@ -451,7 +448,7 @@ PhysicalGunObject/
             EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status every cycle
-            debugText.Clear();
+            ClearDebugMessages();
             numberTransfers = numberRefineries = numberAssemblers = 0;
 
             bool didAtLeastOneStep = false;
@@ -459,7 +456,7 @@ PhysicalGunObject/
             {
                 do
                 {
-                    debugText.Add(string.Format("> Doing step {0}", processStep));
+                    Debug(string.Format("> Doing step {0}", processStep));
                     processSteps[processStep]();
                     processStep++;
                     didAtLeastOneStep = true;
@@ -487,7 +484,7 @@ PhysicalGunObject/
                 string err = "An error occured,\n" +
                     "please give the following information to the developer:\n" +
                     string.Format("Current step on error: {0}\n{1}", processStep, ex.ToString().Replace("\r", ""));
-                debugText.Add(err);
+                Debug(err);
                 UpdateStatusPanels();
                 EchoR(err);
                 throw ex;
@@ -515,7 +512,7 @@ PhysicalGunObject/
             string stepText = StepStatusText(startingStep, processStep, goalStep, didAtLeastOneStep);
             var msg = $"Completed {stepText} in {executionTime}ms, {executionLoadPercent}% load ({Runtime.CurrentInstructionCount} instructions)";
             EchoR(msg);
-            debugText.Add(msg);
+            Debug(msg);
             UpdateStatusPanels();
         }
 
@@ -605,7 +602,7 @@ PhysicalGunObject/
             argScanGrinders = DEFAULT_ARG_SCAN_GRINDERS;
             argScanWelders = DEFAULT_ARG_SCAN_WELDERS;
             argQuotaStable = DEFAULT_ARG_QUOTA_STABLE;
-            debugLogic.Clear();
+            ResetDebugFlags();
 
             foreach (System.Text.RegularExpressions.Match match in argParseRegex.Matches(Me.CustomData))
             {
@@ -620,13 +617,13 @@ PhysicalGunObject/
                         if (hasValue)
                             throw new ArgumentException("Argument 'rewrite' does not have a value");
                         argRewriteTags = true;
-                        debugText.Add("Tag rewriting enabled");
+                        Debug("Tag rewriting enabled");
                         break;
                     case "norewrite":
                         if (hasValue)
                             throw new ArgumentException("Argument 'norewrite' does not have a value");
                         argRewriteTags = false;
-                        debugText.Add("Tag rewriting disabled");
+                        Debug("Tag rewriting disabled");
                         break;
                     case "tags":
                         if (value.Length != 2)
@@ -637,34 +634,34 @@ PhysicalGunObject/
                         {
                             argTagOpen = char.ToUpper(value[0]);
                             argTagClose = char.ToUpper(value[1]);
-                            debugText.Add(string.Format("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
+                            Debug(string.Format("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
                         }
                         break;
                     case "prefix":
                         argTagPrefix = value.ToUpper();
                         if (argTagPrefix == "")
-                            debugText.Add("Tag prefix disabled");
+                            Debug("Tag prefix disabled");
                         else
-                            debugText.Add(string.Format("Tag prefix is '{0}'", argTagPrefix));
+                            Debug(string.Format("Tag prefix is '{0}'", argTagPrefix));
                         break;
                     case "scan":
                         switch (value.ToLower())
                         {
                             case "collectors":
                                 argScanCollectors = true;
-                                debugText.Add("Enabled scanning of Collectors");
+                                Debug("Enabled scanning of Collectors");
                                 break;
                             case "drills":
                                 argScanDrills = true;
-                                debugText.Add("Enabled scanning of Drills");
+                                Debug("Enabled scanning of Drills");
                                 break;
                             case "grinders":
                                 argScanGrinders = true;
-                                debugText.Add("Enabled scanning of Grinders");
+                                Debug("Enabled scanning of Grinders");
                                 break;
                             case "welders":
                                 argScanWelders = true;
-                                debugText.Add("Enabled scanning of Welders");
+                                Debug("Enabled scanning of Welders");
                                 break;
                             default:
                                 throw new ArgumentException(string.Format("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
@@ -675,11 +672,11 @@ PhysicalGunObject/
                         {
                             case "literal":
                                 argQuotaStable = false;
-                                debugText.Add("Disabled stable dynamic quotas");
+                                Debug("Disabled stable dynamic quotas");
                                 break;
                             case "stable":
                                 argQuotaStable = true;
-                                debugText.Add("Enabled stable dynamic quotas");
+                                Debug("Enabled stable dynamic quotas");
                                 break;
                             default:
                                 throw new ArgumentException(string.Format("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
@@ -687,11 +684,7 @@ PhysicalGunObject/
                         break;
                     case "debug":
                         value = value.ToLower();
-                        if (argValidDebugValues.Contains(value))
-                            debugLogic.Add(value);
-                        else
-                            throw new ArgumentException(string.Format("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
-                                    value));
+                        EnableDebugFlag(value);
                         break;
                     case "":
                     case "tim_version":
@@ -728,7 +721,7 @@ PhysicalGunObject/
         {
             if (Me.CustomData != completeArguments)
             {
-                debugText.Add("Arguments changed, re-processing...");
+                Debug("Arguments changed, re-processing...");
                 ProcessScriptArgs();
                 completeArguments = Me.CustomData;
             }
@@ -740,7 +733,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepScanGrids()
         {
-            debugText.Add("Scanning grid connectors...");
+            Debug("Scanning grid connectors...");
             ScanGrids();
         }
 
@@ -774,7 +767,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepInventoryScan()
         {
-            debugText.Add("Scanning inventories...");
+            Debug("Scanning inventories...");
 
             // reset everything that we'll check during this step
             foreach (string itype in types)
@@ -836,7 +829,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepParseTags()
         {
-            debugText.Add("Scanning tags...");
+            Debug("Scanning tags...");
 
             // reset everything that we'll check during this step
             foreach (string itype in types)
@@ -868,7 +861,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepAmountAdjustment()
         {
-            debugText.Add("Adjusting tallies...");
+            Debug("Adjusting tallies...");
             AdjustAmounts();
         }
 
@@ -878,7 +871,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepQuotaPanels()
         {
-            debugText.Add("Scanning quota panels...");
+            Debug("Scanning quota panels...");
             ProcessQuotaPanels(argQuotaStable);
         }
 
@@ -888,7 +881,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepLimitedItemRequests()
         {
-            debugText.Add("Processing limited item requests...");
+            Debug("Processing limited item requests...");
             AllocateItems(true); // limited requests
         }
 
@@ -898,7 +891,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepManageRefineries()
         {
-            debugText.Add("Managing refineries...");
+            Debug("Managing refineries...");
             ManageRefineries();
         }
 
@@ -908,7 +901,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepScanProduction()
         {
-            debugText.Add("Scanning production...");
+            Debug("Scanning production...");
             ScanProduction();
         }
 
@@ -918,7 +911,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepUnlimitedItemRequests()
         {
-            debugText.Add("Processing remaining item requests...");
+            Debug("Processing remaining item requests...");
             AllocateItems(false); // unlimited requests
         }
 
@@ -928,7 +921,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepManageAssemblers()
         {
-            debugText.Add("Managing assemblers...");
+            Debug("Managing assemblers...");
             ManageAssemblers();
         }
 
@@ -938,7 +931,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepUpdateInventoryPanels()
         {
-            debugText.Add("Updating inventory panels...");
+            Debug("Updating inventory panels...");
             UpdateInventoryPanels();
         }
 
@@ -986,7 +979,7 @@ PhysicalGunObject/
             {
                 itypeRestr.GetValueOrDefault(itype, Make.HashSet<string>).Add(isub);
             }
-            if (!init) debugText.Add(btype + "/" + bsub + " does not accept " + typeLabel[itype] + "/" + subLabel[isub]);
+            if (!init) Debug(btype + "/" + bsub + " does not accept " + typeLabel[itype] + "/" + subLabel[isub]);
         }
 
         bool BlockAcceptsTypeSub(IMyCubeBlock block, string itype, string isub)
@@ -1207,7 +1200,7 @@ PhysicalGunObject/
 
         void ProcessQuotaPanels(bool quotaStable)
         {
-            bool debug = debugLogic.Contains("quotas");
+            bool debug = ShouldDebug("quotas");
             int l, x, y, wide, size, spanx, spany, height, p, priority;
             long amount, round, total;
             float ratio;
@@ -1381,11 +1374,11 @@ PhysicalGunObject/
                         total = (long)(data.amount / data.ratio + 0.5f);
                         if (debug)
                         {
-                            debugText.Add("median " + typeLabel[qtype] + " is " + subLabel[isub] + ", " + total / 1e6 + " -> " + data.amount / 1e6 / data.ratio);
+                            Debug("median " + typeLabel[qtype] + " is " + subLabel[isub] + ", " + total / 1e6 + " -> " + data.amount / 1e6 / data.ratio);
                             foreach (string qsub in scalesubs)
                             {
                                 data = typeSubData[qtype][qsub];
-                                debugText.Add("  " + subLabel[qsub] + " @ " + data.amount / 1e6 + " / " + data.ratio + " => " + (long)(data.amount / 1e6 / data.ratio + 0.5f));
+                                Debug("  " + subLabel[qsub] + " @ " + data.amount / 1e6 + " / " + data.ratio + " => " + (long)(data.amount / 1e6 / data.ratio + 0.5f));
                             }
                         }
                     }
@@ -1459,7 +1452,7 @@ PhysicalGunObject/
                             else
                             {
                                 name.Append((attr = String.Join(":", fields).ToLower()) + " ");
-                                debugText.Add("Invalid panel span rule: " + attr);
+                                Debug("Invalid panel span rule: " + attr);
                             }
                         }
                         else if (attr.Length >= 3 & "QUOTAS".StartsWith(attr))
@@ -1483,7 +1476,7 @@ PhysicalGunObject/
                                 else
                                 {
                                     name.Append(":" + fields[i].ToLower());
-                                    debugText.Add("Invalid quota panel rule: " + fields[i].ToLower());
+                                    Debug("Invalid quota panel rule: " + fields[i].ToLower());
                                 }
                             }
                             name.Append(" ");
@@ -1503,7 +1496,7 @@ PhysicalGunObject/
                                 else
                                 {
                                     name.Append(":" + fields[i].ToLower());
-                                    debugText.Add("Invalid inventory panel rule: " + fields[i].ToLower());
+                                    Debug("Invalid inventory panel rule: " + fields[i].ToLower());
                                 }
                             }
                             name.Append(" ");
@@ -1511,7 +1504,7 @@ PhysicalGunObject/
                         else
                         {
                             name.Append((attr = String.Join(":", fields).ToLower()) + " ");
-                            debugText.Add("Invalid panel attribute: " + attr);
+                            Debug("Invalid panel attribute: " + attr);
                         }
                     }
                 }
@@ -1583,7 +1576,7 @@ PhysicalGunObject/
                                 else
                                 {
                                     name.Append(":" + fields[i].ToLower());
-                                    debugText.Add("Unrecognized or ambiguous item: " + fields[i].ToLower());
+                                    Debug("Unrecognized or ambiguous item: " + fields[i].ToLower());
                                 }
                             }
                             if (blkRfn != null)
@@ -1598,12 +1591,12 @@ PhysicalGunObject/
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
                         {
                             name.Append((attr = String.Join(":", fields).ToLower()) + " ");
-                            debugText.Add("Unrecognized or ambiguous item: " + attr);
+                            Debug("Unrecognized or ambiguous item: " + attr);
                         }
                         else if (!block.HasInventory | (block is IMySmallMissileLauncher & !(block is IMySmallMissileLauncherReload | block.BlockDefinition.SubtypeName == "LargeMissileLauncher")) | block is IMyLargeInteriorTurret)
                         {
                             name.Append(String.Join(":", fields).ToLower() + " ");
-                            debugText.Add("Cannot sort items to " + block.CustomName + ": no conveyor-connected inventory");
+                            Debug("Cannot sort items to " + block.CustomName + ": no conveyor-connected inventory");
                         }
                         else
                         {
@@ -1655,7 +1648,7 @@ PhysicalGunObject/
                 }
 
                 if (block.GetUserRelationToOwner(Me.OwnerId) != MyRelationsBetweenPlayerAndBlock.Owner & block.GetUserRelationToOwner(Me.OwnerId) != MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    debugText.Add("Cannot control \"" + block.CustomName + "\" due to differing ownership");
+                    Debug("Cannot control \"" + block.CustomName + "\" due to differing ownership");
             }
         }
 
@@ -1924,37 +1917,37 @@ PhysicalGunObject/
                 if (block is IMyRefinery && (block as IMyProductionBlock).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
 
                 if (block is IMyGasGenerator && (block as IMyGasGenerator).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
 
                 if (block is IMyReactor && (block as IMyReactor).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
 
                 if (block is IMyLargeConveyorTurretBase && ((IMyLargeConveyorTurretBase)block).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
 
                 if (block is IMySmallGatlingGun && ((IMySmallGatlingGun)block).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
 
                 if (block is IMySmallMissileLauncher && ((IMySmallMissileLauncher)block).UseConveyorSystem)
                 {
                     block.GetActionWithName("UseConveyor").Apply(block);
-                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                    Debug("Disabling conveyor system for " + block.CustomName);
                 }
             }
         }
@@ -2031,7 +2024,7 @@ PhysicalGunObject/
                     foreach (InventoryItemData data in typeSubData[itype].Values)
                     {
                         if (data.avail > 0L)
-                            debugText.Add("No place to put " + GetShorthand(data.avail) + " " + typeLabel[itype] + "/" + subLabel[data.subType] + ", containers may be full");
+                            Debug("No place to put " + GetShorthand(data.avail) + " " + typeLabel[itype] + "/" + subLabel[data.subType] + ", containers may be full");
                     }
                 }
             }
@@ -2039,13 +2032,13 @@ PhysicalGunObject/
 
         void AllocateItemBatch(bool limited, int priority, string itype, string isub)
         {
-            bool debug = debugLogic.Contains("sorting");
+            bool debug = ShouldDebug("sorting");
             int locked, dropped;
             long totalrequest, totalavail, request, avail, amount, moved, round;
             List<IMyInventory> invens = null;
             Dictionary<IMyInventory, long> invenRequest;
 
-            if (debug) debugText.Add("sorting " + typeLabel[itype] + "/" + subLabel[isub] + " lim=" + limited + " p=" + priority);
+            if (debug) Debug("sorting " + typeLabel[itype] + "/" + subLabel[isub] + " lim=" + limited + " p=" + priority);
 
             round = 1L;
             if (!FRACTIONAL_TYPES.Contains(itype))
@@ -2070,11 +2063,11 @@ PhysicalGunObject/
                     totalrequest += request;
                 }
             }
-            if (debug) debugText.Add("total req=" + totalrequest / 1e6);
+            if (debug) Debug("total req=" + totalrequest / 1e6);
             if (totalrequest <= 0L)
                 return;
             totalavail = data.avail + data.locked;
-            if (debug) debugText.Add("total avail=" + totalavail / 1e6);
+            if (debug) Debug("total avail=" + totalavail / 1e6);
 
             // disqualify any locked invens which already have their share
             if (totalavail > 0L)
@@ -2098,7 +2091,7 @@ PhysicalGunObject/
 
                             if (avail >= amount)
                             {
-                                if (debug) debugText.Add("locked " + (amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName) + " gets " + amount / 1e6 + ", has " + avail / 1e6);
+                                if (debug) Debug("locked " + (amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName) + " gets " + amount / 1e6 + ", has " + avail / 1e6);
                                 dropped++;
                                 totalrequest -= request;
                                 invenRequest[amtInven] = 0L;
@@ -2118,14 +2111,14 @@ PhysicalGunObject/
                 request = invenRequest[reqInven];
                 if (request <= 0L | totalrequest <= 0L | totalavail <= 0L)
                 {
-                    if (limited & request > 0L) debugText.Add("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
+                    if (limited & request > 0L) Debug("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
                     continue;
                 }
                 amount = (long)((double)request / totalrequest * totalavail);
                 if (limited)
                     amount = Math.Min(amount, request);
                 amount = amount / round * round;
-                if (debug) debugText.Add((reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + request / 1e6 + " / " + totalrequest / 1e6 + " of " + totalavail / 1e6 + " = " + amount / 1e6);
+                if (debug) Debug((reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + request / 1e6 + " / " + totalrequest / 1e6 + " of " + totalavail / 1e6 + " = " + amount / 1e6);
                 totalrequest -= request;
 
                 // check how much it already has
@@ -2165,17 +2158,17 @@ PhysicalGunObject/
 
                 if (limited & amount > 0L)
                 {
-                    debugText.Add("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
+                    Debug("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
                 }
             }
 
-            if (debug) debugText.Add("" + totalavail / 1e6 + " left over");
+            if (debug) Debug("" + totalavail / 1e6 + " left over");
         }
 
 
         long TransferItem(string itype, string isub, long amount, IMyInventory fromInven, IMyInventory toInven)
         {
-            bool debug = debugLogic.Contains("sorting");
+            bool debug = ShouldDebug("sorting");
             List<MyInventoryItem> stacks = new List<MyInventoryItem>();
             int s;
             VRage.MyFixedPoint remaining, moved;
@@ -2220,7 +2213,7 @@ PhysicalGunObject/
                         else
                         {
                             numberTransfers++;
-                            if (debug) debugText.Add(
+                            if (debug) Debug(
                                 "Transferred " + GetShorthand((long)((double)moved * 1e6)) + " " + typeLabel[itype] + "/" + subLabel[isub] +
                                 " from " + (fromInven.Owner == null ? "???" : (fromInven.Owner as IMyTerminalBlock).CustomName) + " to " + (toInven.Owner == null ? "???" : (toInven.Owner as IMyTerminalBlock).CustomName)
                             );
@@ -2296,7 +2289,7 @@ PhysicalGunObject/
             if (!typeSubs.ContainsKey("ORE") | !typeSubs.ContainsKey("INGOT"))
                 return;
 
-            bool debug = debugLogic.Contains("refineries");
+            bool debug = ShouldDebug("refineries");
             string itype, itype2, isub, isub2, isubIngot;
             InventoryItemData data;
             int level, priority;
@@ -2308,7 +2301,7 @@ PhysicalGunObject/
             bool ready;
             List<IMyRefinery> refineries = new List<IMyRefinery>();
 
-            if (debug) debugText.Add("Refinery management:");
+            if (debug) Debug("Refinery management:");
 
             // scan inventory levels
             foreach (string isubOre in typeSubs["ORE"])
@@ -2322,7 +2315,7 @@ PhysicalGunObject/
                         level = (int)(100L * data.amount / data.quota);
                         ores.Add(isubOre);
                         oreLevel[isubOre] = level;
-                        if (debug) debugText.Add("  " + subLabel[isubIngot] + " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + "," + (isubOre == isubIngot ? "" : " Ore/" + subLabel[isubOre]) + " L=" + level + "%");
+                        if (debug) Debug("  " + subLabel[isubIngot] + " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + "," + (isubOre == isubIngot ? "" : " Ore/" + subLabel[isubOre]) + " L=" + level + "%");
                     }
                 }
             }
@@ -2357,7 +2350,7 @@ PhysicalGunObject/
                     speed = work.item.subType == isub ? Math.Max(work.quantity - (double)stacks[0].Amount, 0.0) : Math.Max(work.quantity, oldspeed);
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, 0.2), 10000.0);
                     data.prdSpeed["" + rfn.BlockDefinition] = speed;
-                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + (int)(oldspeed + 0.5) + " -> " + (int)(speed + 0.5) + "kg/cycle");
+                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) Debug("  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + (int)(oldspeed + 0.5) + " -> " + (int)(speed + 0.5) + "kg/cycle");
                 }
                 if (refineryOres[rfn].Count > 0) refineryOres[rfn].IntersectWith(oreLevel.Keys); else refineryOres[rfn].UnionWith(oreLevel.Keys);
                 ready = refineryOres[rfn].Count > 0;
@@ -2369,7 +2362,7 @@ PhysicalGunObject/
                 }
                 if (ready)
                     refineries.Add(rfn);
-                if (debug) debugText.Add(
+                if (debug) Debug(
                     "  " + rfn.CustomName + (stacks.Count < 1 ? " idle" : " refining " + (int)stacks[0].Amount + "kg " + (isub == "" ? "unknown" : subLabel[isub] + (!oreLevel.ContainsKey(isub) ? "" : " (L=" + oreLevel[isub] + "%)")) + (stacks.Count < 2 ? "" : ", then " + (int)stacks[1].Amount + "kg " + (isub2 == "" ? "unknown" : subLabel[isub2] + (!oreLevel.ContainsKey(isub2) ? "" : " (L=" + oreLevel[isub2] + "%)")))) + "; " + (oreLevel.Count == 0 ? "nothing to do" : ready ? "ready" : refineryOres[rfn].Count == 0 ? "restricted" : "busy")
                 );
             }
@@ -2405,9 +2398,9 @@ PhysicalGunObject/
                         speed = typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0;
                         AddInvenRequest(rfn, 0, "ORE", isub, priority, (long)(10 * speed * 1e6 + 0.5));
                         oreLevel[isub] += Math.Min(Math.Max((int)(oreLevel[isub] * 0.41), 1), 100 / refineryOres.Count);
-                        if (debug) debugText.Add("  " + rfn.CustomName + " assigned " + (int)(10 * speed + 0.5) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
+                        if (debug) Debug("  " + rfn.CustomName + " assigned " + (int)(10 * speed + 0.5) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
                     }
-                    else if (debug) debugText.Add("  " + rfn.CustomName + " unassigned, nothing to do");
+                    else if (debug) Debug("  " + rfn.CustomName + " unassigned, nothing to do");
                 }
             }
 
@@ -2426,7 +2419,7 @@ PhysicalGunObject/
             if (!typeSubs.ContainsKey("INGOT"))
                 return;
 
-            bool debug = debugLogic.Contains("assemblers");
+            bool debug = ShouldDebug("assemblers");
             long ttlCmp;
             int level, amount;
             InventoryItemData data, data2;
@@ -2439,12 +2432,12 @@ PhysicalGunObject/
             bool ready, jam;
             List<IMyAssembler> assemblers = new List<IMyAssembler>();
 
-            if (debug) debugText.Add("Assembler management:");
+            if (debug) Debug("Assembler management:");
 
             // scan inventory levels
             typeAmount.TryGetValue("COMPONENT", out ttlCmp);
             amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f) ? d.amount / Math.Max(d.minimum, 17.5 * d.ratio * ttlCmp) : 2.0));
-            if (debug) debugText.Add("  Component par L=" + amount + "%");
+            if (debug) Debug("  Component par L=" + amount + "%");
             foreach (string itype in types)
             {
                 if (itype != "ORE" & itype != "INGOT")
@@ -2459,7 +2452,7 @@ PhysicalGunObject/
                         if (data.quota > 0L & level < itemPar[item] & data.blueprint != default(MyDefinitionId))
                         {
                             if (data.hold == 0) itemLevel[item] = level;
-                            if (debug) debugText.Add("  " + typeLabel[itype] + "/" + subLabel[isub] + (data.hold > 0 ? "" : " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + ", L=" + level + "%") + (data.hold > 0 | data.jam > 0 ? "; HOLD " + data.hold + "/" + 10 * data.jam : ""));
+                            if (debug) Debug("  " + typeLabel[itype] + "/" + subLabel[isub] + (data.hold > 0 ? "" : " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + ", L=" + level + "%") + (data.hold > 0 | data.jam > 0 ? "; HOLD " + data.hold + "/" + 10 * data.jam : ""));
                         }
                     }
                 }
@@ -2499,7 +2492,7 @@ PhysicalGunObject/
                         speed = Math.Max(oldspeed, work.quantity - (double)queue[0].Amount + asm.CurrentProgress);
                         if ((producerJam[asm] = (producerJam.TryGetValue(asm, out level) ? level : 0) + 1) >= 3)
                         {
-                            debugText.Add("  " + asm.CustomName + " is jammed by " + subLabel[item.subType]);
+                            Debug("  " + asm.CustomName + " is jammed by " + subLabel[item.subType]);
                             producerJam.Remove(asm);
                             asm.ClearQueue();
                             data2.hold = 10 * (data2.jam < 1 | data2.hold < 1 ? data2.jam = Math.Min(10, data2.jam + 1) : data2.jam);
@@ -2508,7 +2501,7 @@ PhysicalGunObject/
                     }
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, Math.Max(0.2, 0.5 * oldspeed)), Math.Min(1000.0, 2.0 * oldspeed));
                     data2.prdSpeed["" + asm.BlockDefinition] = speed;
-                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + (int)(oldspeed * 100) / 100.0 + " -> " + (int)(speed * 100) / 100.0 + "/cycle");
+                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) Debug("  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + (int)(oldspeed * 100) / 100.0 + " -> " + (int)(speed * 100) / 100.0 + "/cycle");
                 }
                 if (assemblerItems[asm].Count == 0) assemblerItems[asm].UnionWith(itemLevel.Keys); else assemblerItems[asm].IntersectWith(itemLevel.Keys);
                 speed = data != null && data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0;
@@ -2517,7 +2510,7 @@ PhysicalGunObject/
                     if (data2 != null) data2.jam = Math.Max(0, data2.jam - (data2.hold < 1 ? 1 : 0));
                     if (ready = assemblerItems[asm].Count > 0) assemblers.Add(asm);
                 }
-                if (debug) debugText.Add(
+                if (debug) Debug(
                     "  " + asm.CustomName + (asm.IsQueueEmpty ? " idle" : (asm.Mode == MyAssemblerMode.Assembly ? " making " : " breaking ") + queue[0].Amount + "x " + (item.type == "" ? "unknown" : subLabel[item.subType] + (!itemLevel.ContainsKey(item) ? "" : " (L=" + itemLevel[item] + "%)")) + (queue.Count <= 1 ? "" : ", then " + queue[1].Amount + "x " + (item2.type == "" ? "unknown" : subLabel[item2.subType] + (!itemLevel.ContainsKey(item2) ? "" : " (L=" + itemLevel[item2] + "%)")))) + "; " + (itemLevel.Count == 0 ? "nothing to do" : ready ? "ready" : assemblerItems[asm].Count == 0 ? "restricted" : "busy")
                 );
             }
@@ -2552,9 +2545,9 @@ PhysicalGunObject/
                         amount = Math.Max((int)(10 * speed), 10);
                         asm.AddQueueItem(data.blueprint, (double)amount);
                         itemLevel[item] += (int)Math.Ceiling(1e8 * amount / data.quota);
-                        if (debug) debugText.Add("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
+                        if (debug) Debug("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
                     }
-                    else if (debug) debugText.Add("  " + asm.CustomName + " unassigned, nothing to do");
+                    else if (debug) Debug("  " + asm.CustomName + " unassigned, nothing to do");
                 }
             }
         }
@@ -2646,7 +2639,7 @@ PhysicalGunObject/
                     panel.TextPadding = 0;
                     panel.WritePublicTitle("Script Status");
                     if (panelSpan.ContainsKey(panel))
-                        debugText.Add("Status panels cannot be spanned");
+                        Debug("Status panels cannot be spanned");
                     panel.WriteText(sb);
                 }
             }
@@ -2656,7 +2649,7 @@ PhysicalGunObject/
                 foreach (IMyTerminalBlock blockFrom in blockErrors.Keys)
                 {
                     foreach (IMyTerminalBlock blockTo in blockErrors[blockFrom])
-                        debugText.Add("No conveyor connection from " + blockFrom.CustomName + " to " + blockTo.CustomName);
+                        Debug("No conveyor connection from " + blockFrom.CustomName + " to " + blockTo.CustomName);
                 }
                 foreach (IMyTextPanel panel in debugPanels)
                 {
@@ -2664,8 +2657,8 @@ PhysicalGunObject/
                     panel.TextPadding = 0;
                     panel.WritePublicTitle("Script Debugging");
                     if (panelSpan.ContainsKey(panel))
-                        debugText.Add("Debug panels cannot be spanned");
-                    panel.WriteText(String.Join("\n", debugText));
+                        Debug("Debug panels cannot be spanned");
+                    panel.WriteText(String.Join("\n", DebugMessages));
                 }
             }
             blockErrors.Clear();

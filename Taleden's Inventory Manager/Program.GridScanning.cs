@@ -215,7 +215,7 @@ namespace IngameScript
                     {
                         if (!ShipsScanned.Contains(dockedShip))
                         {
-                            debugText.Add($"{ship.Name} docked to {dockedShip.Name}");
+                            Debug($"{ship.Name} docked to {dockedShip.Name}");
                             ShipScanQueue.Enqueue(dockedShip);
                         }
                     }
