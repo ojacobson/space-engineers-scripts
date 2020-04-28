@@ -984,7 +984,7 @@ PhysicalGunObject/
             }
             else
             {
-                (itypeRestr.TryGetValue(itype, out restr) ? restr : itypeRestr[itype] = new HashSet<string>()).Add(isub);
+                itypeRestr.GetValueOrDefault(itype, Make.HashSet<string>).Add(isub);
             }
             if (!init) debugText.Add(btype + "/" + bsub + " does not accept " + typeLabel[itype] + "/" + subLabel[isub]);
         }
@@ -1589,10 +1589,10 @@ PhysicalGunObject/
                             if (blkRfn != null)
                             {
                                 if (blkRfn.Enabled)
-                                    (refineryOres.TryGetValue(blkRfn, out ores) ? ores : refineryOres[blkRfn] = new HashSet<string>()).UnionWith(autoores);
+                                    refineryOres.GetValueOrDefault(blkRfn, Make.HashSet<string>).UnionWith(autoores);
                             }
                             else if (blkAsm.Enabled)
-                                (assemblerItems.TryGetValue(blkAsm, out items) ? items : assemblerItems[blkAsm] = new HashSet<ItemId>()).UnionWith(autoitems);
+                                assemblerItems.GetValueOrDefault(blkAsm, Make.HashSet<ItemId>).UnionWith(autoitems);
                             name.Append(" ");
                         }
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
@@ -1907,9 +1907,9 @@ PhysicalGunObject/
                 priority = int.MaxValue;
 
             // new priority/type/sub?
-            tsir = priTypeSubInvenRequest.TryGetValue(priority, out tsir) ? tsir : priTypeSubInvenRequest[priority] = new Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>();
-            sir = tsir.TryGetValue(itype, out sir) ? sir : tsir[itype] = new Dictionary<string, Dictionary<IMyInventory, long>>();
-            ir = sir.TryGetValue(isub, out ir) ? ir : sir[isub] = new Dictionary<IMyInventory, long>();
+            tsir = priTypeSubInvenRequest.GetValueOrDefault(priority, Make.Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>);
+            sir = tsir.GetValueOrDefault(itype, Make.Dictionary<string, Dictionary<IMyInventory, long>>);
+            ir = sir.GetValueOrDefault(isub, Make.Dictionary<IMyInventory, long>);
 
             // update request
             IMyInventory inven = block.GetInventory(inv);

@@ -9,10 +9,18 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common Predicates", "Common
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Taleden's Inventory Manager", "Taleden's Inventory Manager\Taleden's Inventory Manager.csproj", "{306C0835-4DE2-4C87-AFA9-A5CCBCF2B1AA}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Common Makers", "Common Makers\Common Makers.shproj", "{A77C35A9-B3EA-4376-BB4C-C39B38148C23}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Collections", "Collections\Collections.shproj", "{C2FDDD74-CA50-4A9F-81C3-8A61185A33C2}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Collections\Collections.projitems*{306c0835-4de2-4c87-afa9-a5ccbcf2b1aa}*SharedItemsImports = 4
+		Common Makers\Common_Makers.projitems*{306c0835-4de2-4c87-afa9-a5ccbcf2b1aa}*SharedItemsImports = 4
 		Common Predicates\Common_Predicates.projitems*{61eba249-19f3-48b6-a25b-a4cee90168ba}*SharedItemsImports = 13
 		Common Predicates\Common_Predicates.projitems*{6f9177b3-55f6-4a65-bc8f-ef410eb0ef42}*SharedItemsImports = 4
+		Common Makers\Common_Makers.projitems*{a77c35a9-b3ea-4376-bb4c-c39b38148c23}*SharedItemsImports = 13
+		Collections\Collections.projitems*{c2fddd74-ca50-4a9f-81c3-8a61185a33c2}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

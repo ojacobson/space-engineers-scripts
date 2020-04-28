@@ -115,10 +115,14 @@ namespace IngameScript
                         shipGrids.Add(new HashSet<IMyCubeGrid> { g2 });
                         shipName.Add(g2.CustomName);
                     }
-                    Dictionary<int, List<string>> shipDocks;
-                    List<string> docks;
-                    ((shipShipDocks.TryGetValue(s1, out shipDocks) ? shipDocks : shipShipDocks[s1] = new Dictionary<int, List<string>>()).TryGetValue(s2, out docks) ? docks : shipShipDocks[s1][s2] = new List<string>()).Add(block.CustomName);
-                    ((shipShipDocks.TryGetValue(s2, out shipDocks) ? shipDocks : shipShipDocks[s2] = new Dictionary<int, List<string>>()).TryGetValue(s1, out docks) ? docks : shipShipDocks[s2][s1] = new List<string>()).Add(conn2.CustomName);
+                    shipShipDocks
+                        .GetValueOrDefault(s1, Make.Dictionary<int, List<string>>)
+                        .GetValueOrDefault(s2, Make.List<string>())
+                        .Add(block.CustomName);
+                    shipShipDocks
+                        .GetValueOrDefault(s2, Make.Dictionary<int, List<string>>)
+                        .GetValueOrDefault(s1, Make.List<string>())
+                        .Add(conn2.CustomName);
                 }
             }
         }
@@ -170,9 +174,8 @@ namespace IngameScript
                 var g2 = block.TopGrid;
                 if (g2 == null)
                     continue;
-                HashSet<IMyCubeGrid> grids;
-                (GridLinks.TryGetValue(g1, out grids) ? grids : GridLinks[g1] = new HashSet<IMyCubeGrid>()).Add(g2);
-                (GridLinks.TryGetValue(g2, out grids) ? grids : GridLinks[g2] = new HashSet<IMyCubeGrid>()).Add(g1);
+                GridLinks.GetValueOrDefault(g1, Make.HashSet<IMyCubeGrid>).Add(g2);
+                GridLinks.GetValueOrDefault(g2, Make.HashSet<IMyCubeGrid>).Add(g1);
             }
 
             return GridLinks;
