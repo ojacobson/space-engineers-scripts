@@ -715,8 +715,12 @@ PhysicalGunObject/
             if (selfIndex != firstAvailableIndex)
             {
                 Echo("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
-                if (("" + (blocks[firstAvailableIndex] as IMyProgrammableBlock).TerminalRunArgument).Trim() != ("" + Me.TerminalRunArgument).Trim())
-                    Echo("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
+
+                var activeConfiguration = blocks[firstAvailableIndex].CustomData.Trim();
+                var myConfiguration = Me.CustomData.Trim();
+                if (activeConfiguration != myConfiguration)
+                    Echo("WARNING: Custom data does not match TIM #" + (firstAvailableIndex + 1) + ".");
+
                 throw new IgnoreExecutionException();
             }
         }
