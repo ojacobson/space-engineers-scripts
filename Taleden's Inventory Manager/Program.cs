@@ -22,7 +22,6 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         #region mdk preserve
-
         // how often the script should update
         //     UpdateFrequency.None      - No automatic updating (manual only)
         //     UpdateFrequency.Once      - next tick (is unset after run)
