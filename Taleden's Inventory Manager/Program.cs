@@ -22,9 +22,6 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         #region mdk preserve
-        // whether to use real time (second between calls) or pure UpdateFrequency
-        // for update frequency
-        readonly bool USE_REAL_TIME = false;
 
         // how often the script should update
         //     UpdateFrequency.None      - No automatic updating (manual only)
@@ -32,12 +29,7 @@ namespace IngameScript
         //     UpdateFrequency.Update1   - update every tick
         //     UpdateFrequency.Update10  - update every 10 ticks
         //     UpdateFrequency.Update100 - update every 100 ticks
-        // (if USE_REAL_TIME == true, this is ignored)
         const UpdateFrequency UPDATE_FREQUENCY = UpdateFrequency.Update100;
-
-        // How often the script should update in milliseconds
-        // (if USE_REAL_TIME == false, this is ignored)
-        const int UPDATE_REAL_TIME = 1000;
 
         // The maximum run time of the script per call.
         // Measured in milliseconds.
@@ -304,15 +296,8 @@ PhysicalGunObject/
         string[] statsLog = new string[12];
         /// <summary>
         /// The time we started the last cycle at.
-        /// If <see cref="USE_REAL_TIME"/> is <c>true</c>, then it is also used to track
-        /// when the script should next update
         /// </summary>
         DateTime currentCycleStartTime;
-        /// <summary>
-        /// The time to wait before starting the next cycle.
-        /// Only used if <see cref="USE_REAL_TIME"/> is <c>true</c>.
-        /// </summary>
-        TimeSpan cycleUpdateWaitTime = new TimeSpan(0, 0, 0, 0, UPDATE_REAL_TIME);
         long totalCallCount;
         int numberTransfers;
         int numberRefineries;
@@ -412,10 +397,7 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            if (USE_REAL_TIME)
-                Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            else
-                Runtime.UpdateFrequency = UPDATE_FREQUENCY;
+            Runtime.UpdateFrequency = UPDATE_FREQUENCY;
 
             // echo compilation statement
             EchoR("Compiled TIM " + VERSION_NICE_TEXT);
@@ -427,19 +409,6 @@ PhysicalGunObject/
         public void Main(string argument)
         {
             // init call
-            // do update frequency check
-            if (USE_REAL_TIME)
-            {
-                DateTime n = DateTime.Now;
-                if (n - currentCycleStartTime >= cycleUpdateWaitTime)
-                    currentCycleStartTime = n;
-                else
-                {
-                    Echo(echoOutput.ToString()); // ensure that output is not lost
-                    return;
-                }
-            }
-
             currentCycleStartTime = DateTime.Now;
             echoOutput.Clear();
             int startingStep = processStep;
