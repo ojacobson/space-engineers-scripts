@@ -307,7 +307,6 @@ PhysicalGunObject/
         System.Text.RegularExpressions.Regex tagRegex;
         static bool foundNewItem;
         string timUpdateText;
-        StringBuilder echoOutput = new StringBuilder();
 
         Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>> priTypeSubInvenRequest = new Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>>();
         Dictionary<IMyTextPanel, int> qpanelPriority = new Dictionary<IMyTextPanel, int>();
@@ -329,12 +328,6 @@ PhysicalGunObject/
         #endregion
 
         #endregion
-
-        void EchoR(string log)
-        {
-            echoOutput.AppendLine(log);
-            Echo(log);
-        }
 
         #region Properties
 
@@ -400,7 +393,7 @@ PhysicalGunObject/
             Runtime.UpdateFrequency = UPDATE_FREQUENCY;
 
             // echo compilation statement
-            EchoR("Compiled TIM " + VERSION_NICE_TEXT);
+            Echo("Compiled TIM " + VERSION_NICE_TEXT);
 
             // format terminal info text
             timUpdateText = string.Format(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
@@ -410,11 +403,10 @@ PhysicalGunObject/
         {
             // init call
             currentCycleStartTime = DateTime.Now;
-            echoOutput.Clear();
             int startingStep = processStep;
 
             // output terminal info
-            EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
+            Echo(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status every cycle
             ClearDebugMessages();
@@ -435,7 +427,7 @@ PhysicalGunObject/
             }
             catch (ArgumentException ex)
             {
-                EchoR(ex.Message);
+                Echo(ex.Message);
                 processStep = 0;
                 return;
             }
@@ -455,7 +447,7 @@ PhysicalGunObject/
                     string.Format("Current step on error: {0}\n{1}", processStep, ex.ToString().Replace("\r", ""));
                 Debug(err);
                 UpdateStatusPanels();
-                EchoR(err);
+                Echo(err);
                 throw ex;
             }
 
@@ -480,7 +472,7 @@ PhysicalGunObject/
 
             string stepText = StepStatusText(startingStep, processStep, goalStep, didAtLeastOneStep);
             var msg = $"Completed {stepText} in {executionTime}ms, {executionLoadPercent}% load ({Runtime.CurrentInstructionCount} instructions)";
-            EchoR(msg);
+            Echo(msg);
             Debug(msg);
             UpdateStatusPanels();
         }
@@ -723,9 +715,9 @@ PhysicalGunObject/
             // if there are other programmable blocks of higher index, then they will execute and we won't
             if (selfIndex != firstAvailableIndex)
             {
-                EchoR("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
+                Echo("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
                 if (("" + (blocks[firstAvailableIndex] as IMyProgrammableBlock).TerminalRunArgument).Trim() != ("" + Me.TerminalRunArgument).Trim())
-                    EchoR("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
+                    Echo("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
                 throw new IgnoreExecutionException();
             }
         }
