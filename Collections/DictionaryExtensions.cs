@@ -8,7 +8,7 @@ namespace IngameScript
 {
     static class DictionaryExtensions
     {
-        public static V GetValueOrDefault<K, V>(this Dictionary<K, V> dictionary, K key, Func<V> defaultFactory)
+        public static V GetOrAdd<K, V>(this Dictionary<K, V> dictionary, K key, Func<V> defaultFactory)
         {
             V value;
             if (!dictionary.TryGetValue(key, out value))

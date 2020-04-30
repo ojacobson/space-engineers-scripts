@@ -75,8 +75,8 @@ namespace IngameScript
                 var fromGrid = joint.CubeGrid;
                 var toGrid = joint.TopGrid;
 
-                LinkedGrids.GetValueOrDefault(fromGrid, Make.HashSet<IMyCubeGrid>).Add(toGrid);
-                LinkedGrids.GetValueOrDefault(toGrid, Make.HashSet<IMyCubeGrid>).Add(fromGrid);
+                LinkedGrids.GetOrAdd(fromGrid, Make.HashSet<IMyCubeGrid>).Add(toGrid);
+                LinkedGrids.GetOrAdd(toGrid, Make.HashSet<IMyCubeGrid>).Add(fromGrid);
             }
 
             return LinkedGrids;
@@ -101,7 +101,7 @@ namespace IngameScript
                 var grid = gridEntry.Key;
                 var connectedGrids = gridEntry.Value;
 
-                var ship = ShipsByGrid.GetValueOrDefault(grid, Make.Ship(grid));
+                var ship = ShipsByGrid.GetOrAdd(grid, Make.Ship(grid));
 
                 foreach (var connectedGrid in connectedGrids)
                 {
@@ -114,12 +114,12 @@ namespace IngameScript
             foreach (var connector in connectors)
             {
                 var grid = connector.CubeGrid;
-                ShipsByGrid.GetValueOrDefault(grid, Make.Ship(grid));
+                ShipsByGrid.GetOrAdd(grid, Make.Ship(grid));
             }
 
             // ensure that this ship is always in the set of connected grids, even if it has no connectors or mechanical joints
             var myGrid = Me.CubeGrid;
-            ShipsByGrid.GetValueOrDefault(myGrid, Make.Ship(myGrid));
+            ShipsByGrid.GetOrAdd(myGrid, Make.Ship(myGrid));
 
             return ShipsByGrid;
         }
@@ -157,10 +157,10 @@ namespace IngameScript
                 var farShip = shipsByGrid[farGrid];
 
                 DockedShipsByShip
-                    .GetValueOrDefault(nearShip, Make.HashSet<Ship>)
+                    .GetOrAdd(nearShip, Make.HashSet<Ship>)
                     .Add(farShip);
                 DockedShipsByShip
-                    .GetValueOrDefault(farShip, Make.HashSet<Ship>)
+                    .GetOrAdd(farShip, Make.HashSet<Ship>)
                     .Add(nearShip);
             }
 

@@ -977,7 +977,7 @@ PhysicalGunObject/
             }
             else
             {
-                itypeRestr.GetValueOrDefault(itype, Make.HashSet<string>).Add(isub);
+                itypeRestr.GetOrAdd(itype, Make.HashSet<string>).Add(isub);
             }
             if (!init) Debug(btype + "/" + bsub + " does not accept " + typeLabel[itype] + "/" + subLabel[isub]);
         }
@@ -1582,10 +1582,10 @@ PhysicalGunObject/
                             if (blkRfn != null)
                             {
                                 if (blkRfn.Enabled)
-                                    refineryOres.GetValueOrDefault(blkRfn, Make.HashSet<string>).UnionWith(autoores);
+                                    refineryOres.GetOrAdd(blkRfn, Make.HashSet<string>).UnionWith(autoores);
                             }
                             else if (blkAsm.Enabled)
-                                assemblerItems.GetValueOrDefault(blkAsm, Make.HashSet<ItemId>).UnionWith(autoitems);
+                                assemblerItems.GetOrAdd(blkAsm, Make.HashSet<ItemId>).UnionWith(autoitems);
                             name.Append(" ");
                         }
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
@@ -1900,9 +1900,9 @@ PhysicalGunObject/
                 priority = int.MaxValue;
 
             // new priority/type/sub?
-            tsir = priTypeSubInvenRequest.GetValueOrDefault(priority, Make.Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>);
-            sir = tsir.GetValueOrDefault(itype, Make.Dictionary<string, Dictionary<IMyInventory, long>>);
-            ir = sir.GetValueOrDefault(isub, Make.Dictionary<IMyInventory, long>);
+            tsir = priTypeSubInvenRequest.GetOrAdd(priority, Make.Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>);
+            sir = tsir.GetOrAdd(itype, Make.Dictionary<string, Dictionary<IMyInventory, long>>);
+            ir = sir.GetOrAdd(isub, Make.Dictionary<IMyInventory, long>);
 
             // update request
             IMyInventory inven = block.GetInventory(inv);
