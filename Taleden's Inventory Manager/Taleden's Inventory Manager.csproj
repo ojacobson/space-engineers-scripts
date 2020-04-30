@@ -58,6 +58,7 @@
     <AdditionalFiles Include="Instructions.readme" />
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
+    <Compile Include="Program.Standby.cs" />
     <Compile Include="PutOffExecutionException.cs" />
     <Compile Include="ScreenFormatter.cs" />
     <Compile Include="Ship.cs" />

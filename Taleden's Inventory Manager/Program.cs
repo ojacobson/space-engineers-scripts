@@ -699,30 +699,8 @@ PhysicalGunObject/
 
         public void ProcessStepStandbyCheck()
         {
-            // search for other TIMs
-            List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, blk => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & DockedTo(blk)));
-
-            // check to see if this block is the first available TIM
-            int selfIndex = blocks.IndexOf(Me); // current index in search
-            int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
-
-            // update custom name based on current index
-            string updatedCustomName = argTagOpen + argTagPrefix + (blocks.Count > 1 ? " #" + (selfIndex + 1) : "") + argTagClose;
-            Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : Me.CustomName + " " + updatedCustomName;
-
-            // if there are other programmable blocks of higher index, then they will execute and we won't
-            if (selfIndex != firstAvailableIndex)
-            {
-                Echo("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
-
-                var activeConfiguration = blocks[firstAvailableIndex].CustomData.Trim();
-                var myConfiguration = Me.CustomData.Trim();
-                if (activeConfiguration != myConfiguration)
-                    Echo("WARNING: Custom data does not match TIM #" + (firstAvailableIndex + 1) + ".");
-
-                throw new IgnoreExecutionException();
-            }
+            Debug("Checking for other TIMs...");
+            CheckStandby();
         }
 
         /// <summary>
